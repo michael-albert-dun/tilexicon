@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wordomino</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="src/game.js" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <section class="play-area" aria-labelledby="title">
+        <button id="info-button" class="info-button" type="button" aria-expanded="false" aria-controls="info-panel" aria-label="How to play">i</button>
+
+        <aside id="info-panel" class="info-panel" hidden>
+          <ul class="rules-list">
+            <li>Cover the board with four words.</li>
+            <li>Each word uses exactly four tiles.</li>
+            <li>Tiles must touch along their edges.</li>
+            <li>Read words left-to-right, top-to-bottom.</li>
+          </ul>
+
+          <div class="example-columns" aria-label="Examples">
+            <div>
+              <span>valid</span>
+              <div class="example-grid is-valid" aria-label="Valid straight word">
+                <b style="grid-area: 1 / 1">W</b>
+                <b style="grid-area: 1 / 2">O</b>
+                <b style="grid-area: 1 / 3">R</b>
+                <b style="grid-area: 1 / 4">D</b>
+              </div>
+              <div class="example-grid is-valid" aria-label="Valid bent word">
+                <b style="grid-area: 1 / 1">W</b>
+                <b style="grid-area: 1 / 2">O</b>
+                <b style="grid-area: 2 / 2">R</b>
+                <b style="grid-area: 3 / 2">D</b>
+              </div>
+            </div>
+            <div>
+              <span>invalid</span>
+              <div class="example-grid is-invalid-example" aria-label="Invalid disconnected word">
+                <b style="grid-area: 1 / 1">W</b>
+                <b style="grid-area: 1 / 3">O</b>
+                <b style="grid-area: 2 / 2">R</b>
+                <b style="grid-area: 3 / 3">D</b>
+              </div>
+              <div class="example-grid is-invalid-example" aria-label="Invalid reading order">
+                <b style="grid-area: 2 / 1">W</b>
+                <b style="grid-area: 2 / 2">O</b>
+                <b style="grid-area: 2 / 3">D</b>
+                <b style="grid-area: 3 / 2">R</b>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="masthead">
+          <div>
+            <h1 id="title" class="title-hint" tabindex="0" data-hint="Tile the board with four-letter tetromino words.">Wordomino</h1>
+          </div>
+        </div>
+
+        <div id="board" class="board" aria-label="Wordomino board"></div>
+
+        <div id="selection-lines" class="selection-lines" aria-label="Selections"></div>
+
+        <div id="completion-message" class="completion-message" aria-live="polite"></div>
+
+        <div class="toolbar" aria-label="Game controls">
+          <button id="clear-button" type="button">Clear</button>
+          <button id="reset-button" type="button">Reset</button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+# Words excluded from the generated playable dictionary.
+# Keep this lowercase and one word per line.
+arse
+boob
+bozo
+butt
+coon
+crap
+cunt
+damn
+dick
+dyke
+fart
+fuck
+gook
+hell
+homo
+japs
+jizz
+kike
+kill
+kunt
+lech
+lust
+nazi
+poop
+porn
+puss
+rape
+shit
+slut
+spic
+tits
+turd
+twat
+wank

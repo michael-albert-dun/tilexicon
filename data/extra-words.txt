@@ -1,0 +1,22 @@
+# Common words to allow even if the system dictionary filter omits them.
+# This is mostly for words that are also proper names.
+bill
+case
+clay
+dawn
+feet
+hang
+held
+herb
+king
+list
+mark
+okay
+page
+paid
+part
+real
+rich
+root
+will
+wolf
