@@ -1,6 +1,12 @@
 const BOARD_SIZE = 4;
 const WORD_LENGTH = 4;
 const FALLBACK_WORDS = ["able", "boat", "care", "gear"];
+const READING_ORDER = {
+  ROW: "row",
+  COLUMN: "column",
+  BOTH: "both",
+  ANY: "any"
+};
 const FALLBACK_TILING = [
   {
     shape: "J/L",
@@ -52,7 +58,9 @@ const state = {
   invalidClearTimer: null,
   startedAt: null,
   completedAt: null,
+  readingOrder: READING_ORDER.ROW,
   allowedWords: new Set(FALLBACK_WORDS),
+  anagrams: buildAnagramMap(FALLBACK_WORDS),
   generatorWords: [...FALLBACK_WORDS],
   tilings: [FALLBACK_TILING],
   solution: []
@@ -62,17 +70,24 @@ const elements = {
   board: document.querySelector("#board"),
   selectionLines: document.querySelector("#selection-lines"),
   completionMessage: document.querySelector("#completion-message"),
+  settingsButton: document.querySelector("#settings-button"),
+  settingsPanel: document.querySelector("#settings-panel"),
+  readingOrderInputs: document.querySelectorAll("input[name='reading-order']"),
   infoButton: document.querySelector("#info-button"),
   infoPanel: document.querySelector("#info-panel"),
   clearButton: document.querySelector("#clear-button"),
   resetButton: document.querySelector("#reset-button")
 };
 
+elements.settingsButton.addEventListener("click", toggleSettingsPanel);
+elements.readingOrderInputs.forEach((input) => {
+  input.addEventListener("change", updateReadingOrder);
+});
 elements.infoButton.addEventListener("click", toggleInfoPanel);
 elements.clearButton.addEventListener("click", clearCurrentSelection);
 elements.resetButton.addEventListener("click", resetGame);
 document.addEventListener("keydown", handleKeydown);
-document.addEventListener("click", closeInfoPanelFromOutside);
+document.addEventListener("click", closePanelsFromOutside);
 document.addEventListener("pointermove", handleDragMove);
 document.addEventListener("pointerup", endDragSelection);
 document.addEventListener("pointercancel", endDragSelection);
@@ -96,6 +111,7 @@ async function loadGameData() {
     state.allowedWords = new Set(
       allowedText.split("\n").map((word) => word.trim()).filter(Boolean)
     );
+    state.anagrams = buildAnagramMap(state.allowedWords);
   }
 
   if (commonText) {
@@ -138,17 +154,20 @@ function generatePuzzle() {
 
   state.solution = tiling.map((piece, pieceIndex) => {
     const word = words[pieceIndex];
+    const pieceReadingOrder = generationReadingOrder();
     const cells = piece.cells
       .map(({ row, col }) => getCell(row, col))
-      .sort(compareCells);
+      .sort((a, b) => compareCellsForGeneration(a, b, pieceReadingOrder));
+    const letters = generationLetters(word);
 
     cells.forEach((cell, letterIndex) => {
-      cell.letter = word[letterIndex].toUpperCase();
+      cell.letter = letters[letterIndex].toUpperCase();
     });
 
     return {
       shape: piece.shape,
       word,
+      readingOrder: pieceReadingOrder,
       cells: cells.map((cell) => cell.id)
     };
   });
@@ -350,9 +369,9 @@ function deselectCellOnDoubleClick(cell) {
 
 function finishSelection() {
   const result = validateSelection(state.selection);
-  const word = readSelectionWord(state.selection);
+  const word = resolveSelectionWord(state.selection);
 
-  if (!result.valid || !isAllowedWord(word)) {
+  if (!result.valid || !word) {
     rejectSelection();
     return;
   }
@@ -473,15 +492,42 @@ function normalizeCells(cells) {
 }
 
 function readSelectionWord(selection) {
-  return selection
-    .map(getCellById)
-    .sort(compareCells)
+  return sortCellsForReading(selection.map(getCellById), primaryReadingOrder())
     .map((cell) => cell.letter)
     .join("");
 }
 
 function isAllowedWord(word) {
   return state.allowedWords.has(word.toLowerCase());
+}
+
+function resolveSelectionWord(selection) {
+  const cells = selection.map(getCellById);
+
+  if (state.readingOrder === READING_ORDER.ANY) {
+    const signature = anagramSignature(cells.map((cell) => cell.letter).join(""));
+    return state.anagrams.get(signature)?.[0]?.toUpperCase() || null;
+  }
+
+  if (state.readingOrder === READING_ORDER.BOTH) {
+    const rowWord = readCells(cells, READING_ORDER.ROW);
+
+    if (isAllowedWord(rowWord)) {
+      return rowWord;
+    }
+
+    const columnWord = readCells(cells, READING_ORDER.COLUMN);
+    return isAllowedWord(columnWord) ? columnWord : null;
+  }
+
+  const word = readCells(cells, state.readingOrder);
+  return isAllowedWord(word) ? word : null;
+}
+
+function readCells(cells, readingOrder) {
+  return sortCellsForReading(cells, readingOrder)
+    .map((cell) => cell.letter)
+    .join("");
 }
 
 function renderSelectionLines() {
@@ -500,12 +546,9 @@ function renderSelectionLines() {
     if (isPuzzleComplete()) {
       row.textContent = move.word.toUpperCase();
     } else {
-      move.cells
-        .map(getCellById)
-        .sort(compareCells)
-        .forEach((cell) => {
-          row.append(makeMiniTile(cell.letter, `lock-group-${index % 4}`));
-        });
+      [...move.word].forEach((letter) => {
+        row.append(makeMiniTile(letter, `lock-group-${index % 4}`));
+      });
     }
 
     elements.selectionLines.append(row);
@@ -516,19 +559,24 @@ function renderSelectionLines() {
     row.className = state.invalidSelection
       ? "selection-row is-current is-invalid"
       : "selection-row is-current";
-    row.setAttribute("aria-label", `Current selection: ${readSelectionWord(state.selection)}`);
+    const displayWord = readCurrentSelectionDisplayWord();
 
-    state.selection
-      .map(getCellById)
-      .sort(compareCells)
-      .forEach((cell) => {
-        row.append(makeMiniTile(cell.letter, "is-current"));
-      });
+    row.setAttribute("aria-label", `Current selection: ${displayWord}`);
+
+    [...displayWord].forEach((letter) => {
+      row.append(makeMiniTile(letter, "is-current"));
+    });
 
     elements.selectionLines.append(row);
   }
 
   renderCompletionMessage();
+}
+
+function readCurrentSelectionDisplayWord() {
+  return state.selection.length === WORD_LENGTH
+    ? resolveSelectionWord(state.selection) || readSelectionWord(state.selection)
+    : readSelectionWord(state.selection);
 }
 
 function makeMiniTile(letter, extraClassName) {
@@ -635,6 +683,25 @@ function resetGame() {
   render();
 }
 
+function updateReadingOrder(event) {
+  state.readingOrder = event.target.value;
+  generatePuzzle();
+  render();
+}
+
+function toggleSettingsPanel(event) {
+  event.stopPropagation();
+
+  const isOpen = !elements.settingsPanel.hidden;
+
+  elements.settingsPanel.hidden = isOpen;
+  elements.settingsButton.setAttribute("aria-expanded", String(!isOpen));
+
+  if (!isOpen) {
+    closeInfoPanel();
+  }
+}
+
 function toggleInfoPanel(event) {
   event.stopPropagation();
 
@@ -642,25 +709,44 @@ function toggleInfoPanel(event) {
 
   elements.infoPanel.hidden = isOpen;
   elements.infoButton.setAttribute("aria-expanded", String(!isOpen));
+
+  if (!isOpen) {
+    closeSettingsPanel();
+  }
 }
 
-function closeInfoPanelFromOutside(event) {
+function closePanelsFromOutside(event) {
   if (
-    elements.infoPanel.hidden ||
-    elements.infoPanel.contains(event.target) ||
-    elements.infoButton.contains(event.target)
+    !elements.infoPanel.hidden &&
+    !elements.infoPanel.contains(event.target) &&
+    !elements.infoButton.contains(event.target)
   ) {
-    return;
+    closeInfoPanel();
   }
 
+  if (
+    !elements.settingsPanel.hidden &&
+    !elements.settingsPanel.contains(event.target) &&
+    !elements.settingsButton.contains(event.target)
+  ) {
+    closeSettingsPanel();
+  }
+}
+
+function closeInfoPanel() {
   elements.infoPanel.hidden = true;
   elements.infoButton.setAttribute("aria-expanded", "false");
 }
 
+function closeSettingsPanel() {
+  elements.settingsPanel.hidden = true;
+  elements.settingsButton.setAttribute("aria-expanded", "false");
+}
+
 function handleKeydown(event) {
-  if (event.key === "Escape" && !elements.infoPanel.hidden) {
-    elements.infoPanel.hidden = true;
-    elements.infoButton.setAttribute("aria-expanded", "false");
+  if (event.key === "Escape" && (!elements.infoPanel.hidden || !elements.settingsPanel.hidden)) {
+    closeInfoPanel();
+    closeSettingsPanel();
     return;
   }
 
@@ -743,10 +829,81 @@ function cellId(row, col) {
   return `${row}:${col}`;
 }
 
+function primaryReadingOrder() {
+  return state.readingOrder === READING_ORDER.COLUMN
+    ? READING_ORDER.COLUMN
+    : READING_ORDER.ROW;
+}
+
+function generationReadingOrder() {
+  if (state.readingOrder === READING_ORDER.COLUMN) {
+    return READING_ORDER.COLUMN;
+  }
+
+  if (state.readingOrder === READING_ORDER.BOTH) {
+    return Math.random() < 0.5 ? READING_ORDER.ROW : READING_ORDER.COLUMN;
+  }
+
+  return READING_ORDER.ROW;
+}
+
+function generationLetters(word) {
+  return state.readingOrder === READING_ORDER.ANY
+    ? shuffle([...word])
+    : [...word];
+}
+
+function compareCellsForGeneration(a, b, readingOrder) {
+  return readingOrder === READING_ORDER.COLUMN
+    ? compareCellsByColumn(a, b)
+    : compareCells(a, b);
+}
+
+function sortCellsForReading(cells, readingOrder) {
+  return [...cells].sort(
+    readingOrder === READING_ORDER.COLUMN ? compareCellsByColumn : compareCells
+  );
+}
+
 function compareCells(a, b) {
   return a.row - b.row || a.col - b.col;
 }
 
+function compareCellsByColumn(a, b) {
+  return a.col - b.col || a.row - b.row;
+}
+
 function randomItem(items) {
   return items[Math.floor(Math.random() * items.length)];
+}
+
+function shuffle(items) {
+  const shuffled = [...items];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
+function buildAnagramMap(words) {
+  const anagrams = new Map();
+
+  words.forEach((word) => {
+    const lowerWord = word.toLowerCase();
+    const signature = anagramSignature(lowerWord);
+    const existing = anagrams.get(signature) || [];
+
+    existing.push(lowerWord);
+    existing.sort();
+    anagrams.set(signature, existing);
+  });
+
+  return anagrams;
+}
+
+function anagramSignature(word) {
+  return [...word.toLowerCase()].sort().join("");
 }

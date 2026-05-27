@@ -10,14 +10,41 @@
   <body>
     <main class="app">
       <section class="play-area" aria-labelledby="title">
+        <button id="settings-button" class="corner-button settings-button" type="button" aria-expanded="false" aria-controls="settings-panel" aria-label="Settings">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
         <button id="info-button" class="info-button" type="button" aria-expanded="false" aria-controls="info-panel" aria-label="How to play">i</button>
+
+        <aside id="settings-panel" class="settings-panel" hidden>
+          <fieldset>
+            <legend>Reading Order</legend>
+            <label>
+              <input type="radio" name="reading-order" value="row" checked>
+              Left-to-right, top-to-bottom
+            </label>
+            <label>
+              <input type="radio" name="reading-order" value="column">
+              Top-to-bottom, left-to-right
+            </label>
+            <label>
+              <input type="radio" name="reading-order" value="both">
+              Either order
+            </label>
+            <label>
+              <input type="radio" name="reading-order" value="any">
+              Any anagram
+            </label>
+          </fieldset>
+        </aside>
 
         <aside id="info-panel" class="info-panel" hidden>
           <ul class="rules-list">
             <li>Cover the board with four words.</li>
             <li>Each word uses exactly four tiles.</li>
             <li>Tiles must touch along their edges.</li>
-            <li>Read words left-to-right, top-to-bottom.</li>
+            <li>Use the selected reading order.</li>
           </ul>
 
           <div class="example-columns" aria-label="Examples">

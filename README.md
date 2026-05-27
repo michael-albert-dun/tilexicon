@@ -15,7 +15,7 @@ for variation.
 - A move selects exactly four tiles.
 - The selected tiles must form one valid tetromino shape.
 - The letters are read in row-major order: top row to bottom row, and within
-  each row from left to right.
+  each row from left to right, unless the reading-order setting changes that.
 - The resulting four-letter string must appear in the active word list.
 - Accepted words lock their tiles.
 - The main puzzle goal is to tile the whole board with valid words.
@@ -161,16 +161,20 @@ http://localhost:8000
 Prototype started. The browser version currently supports random 4x4 boards
 generated from known tetromino tilings and common four-letter words, four-tile
 selections, tetromino-shape validation, broader dictionary validation, tile
-locking, click or drag selection, a discreet rules popover, clear, reset, and
-deleting a previous selection by clicking its mini-tile row and pressing
-Backspace. Clear removes all selections from the current board; Reset generates
-a new board. Backspace also removes the last tile from the current in-progress
-selection.
+locking, configurable reading order, click or drag selection, a discreet rules
+popover, clear, reset, and deleting a previous selection by clicking its
+mini-tile row and pressing Backspace. Clear removes all selections from the
+current board; Reset generates a new board. Backspace also removes the last tile
+from the current in-progress selection.
 Double-clicking a displayed mini-tile row deletes that full word; double-clicking
 a completed group tile in the main grid unlocks that group and leaves the other
 three tiles as the active selection. Invalid four-tile selections briefly shake
 and then clear. The completion timer stays hidden during play and appears as a
 large elapsed-time display only after the board is fully tiled.
+
+When the reading order is `Either order`, generated hidden words randomly use
+one of the two directional readings per tetromino. When the reading order is
+`Any anagram`, generated hidden words are shuffled across their tetromino tiles.
 
 The allowed-word list lives in `data/allowed-words.txt`, generated from the
 local system dictionary by keeping lowercase four-letter words, excluding proper

@@ -61,10 +61,10 @@ button {
   backdrop-filter: blur(10px);
 }
 
+.corner-button,
 .info-button {
   position: absolute;
   top: 14px;
-  right: 14px;
   display: grid;
   place-items: center;
   width: 28px;
@@ -80,16 +80,43 @@ button {
   box-shadow: 0 6px 14px rgba(45, 62, 76, 0.06);
 }
 
+.info-button {
+  right: 14px;
+}
+
+.settings-button {
+  left: 14px;
+  grid-template-rows: repeat(3, 1fr);
+  padding: 6px;
+}
+
+.settings-button span {
+  display: block;
+  width: 14px;
+  height: 1px;
+  background: currentColor;
+}
+
+.settings-button span:nth-child(1) {
+  transform: translateX(-2px);
+}
+
+.settings-button span:nth-child(3) {
+  transform: translateX(2px);
+}
+
+.corner-button:hover,
+.corner-button[aria-expanded="true"],
 .info-button:hover,
 .info-button[aria-expanded="true"] {
   background: var(--button-hover);
   color: var(--ink);
 }
 
-.info-panel {
+.info-panel,
+.settings-panel {
   position: absolute;
   top: 48px;
-  right: 14px;
   z-index: 4;
   width: min(340px, calc(100% - 28px));
   padding: 14px;
@@ -98,6 +125,45 @@ button {
   background: rgba(251, 253, 255, 0.98);
   color: var(--ink);
   box-shadow: 0 18px 42px rgba(45, 62, 76, 0.16);
+}
+
+.info-panel {
+  right: 14px;
+}
+
+.settings-panel {
+  left: 14px;
+}
+
+.settings-panel fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings-panel legend {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 560;
+  text-transform: uppercase;
+}
+
+.settings-panel label {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  align-items: start;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.settings-panel input {
+  margin: 2px 0 0;
+  accent-color: var(--selected-border);
 }
 
 .rules-list {
