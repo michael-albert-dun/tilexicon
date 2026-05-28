@@ -61,6 +61,7 @@ const state = {
   readingOrder: READING_ORDER.ROW,
   allowedWords: new Set(FALLBACK_WORDS),
   anagrams: buildAnagramMap(FALLBACK_WORDS),
+  preferredAnagrams: buildAnagramMap(FALLBACK_WORDS),
   generatorWords: [...FALLBACK_WORDS],
   tilings: [FALLBACK_TILING],
   solution: []
@@ -116,6 +117,7 @@ async function loadGameData() {
 
   if (commonText) {
     state.generatorWords = commonText.split("\n").map((word) => word.trim()).filter(Boolean);
+    state.preferredAnagrams = buildAnagramMap(state.generatorWords);
   }
 
   if (Array.isArray(tilings) && tilings.length > 0) {
@@ -501,23 +503,45 @@ function isAllowedWord(word) {
   return state.allowedWords.has(word.toLowerCase());
 }
 
+function isCommonWord(word) {
+  return state.generatorWords.includes(word.toLowerCase());
+}
+
+function preferredWord(words) {
+  const allowed = words.filter(isAllowedWord);
+
+  return allowed.find(isCommonWord) || allowed[0] || null;
+}
+
 function resolveSelectionWord(selection) {
   const cells = selection.map(getCellById);
 
   if (state.readingOrder === READING_ORDER.ANY) {
+    const selectedWord = cells.map((cell) => cell.letter).join("");
+
+    if (isAllowedWord(selectedWord)) {
+      return selectedWord;
+    }
+
     const signature = anagramSignature(cells.map((cell) => cell.letter).join(""));
-    return state.anagrams.get(signature)?.[0]?.toUpperCase() || null;
+    return (
+      state.preferredAnagrams.get(signature)?.[0] ||
+      state.anagrams.get(signature)?.[0] ||
+      null
+    )?.toUpperCase() || null;
   }
 
   if (state.readingOrder === READING_ORDER.BOTH) {
-    const rowWord = readCells(cells, READING_ORDER.ROW);
+    const selectedWord = cells.map((cell) => cell.letter).join("");
 
-    if (isAllowedWord(rowWord)) {
-      return rowWord;
+    if (isAllowedWord(selectedWord)) {
+      return selectedWord;
     }
 
-    const columnWord = readCells(cells, READING_ORDER.COLUMN);
-    return isAllowedWord(columnWord) ? columnWord : null;
+    return preferredWord([
+      readCells(cells, READING_ORDER.ROW),
+      readCells(cells, READING_ORDER.COLUMN)
+    ]);
   }
 
   const word = readCells(cells, state.readingOrder);
