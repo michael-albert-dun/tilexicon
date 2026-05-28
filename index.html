@@ -1,145 +1,181 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Wordomino</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="src/game.js" defer></script>
-  </head>
-  <body>
-    <main class="app">
-      <section class="play-area" aria-labelledby="title">
-        <button id="settings-button" class="corner-button settings-button" type="button" aria-expanded="false" aria-controls="settings-panel" aria-label="Settings">
-          <span></span>
-          <span></span>
-          <span></span>
-          <output id="settings-summary" class="settings-summary" aria-hidden="true"></output>
-        </button>
-        <button id="info-button" class="info-button" type="button" aria-expanded="false" aria-controls="info-panel" aria-label="How to play">i</button>
 
-        <aside id="settings-panel" class="settings-panel" hidden>
-          <fieldset>
-            <legend>Reading Order</legend>
-            <label>
-              <input type="radio" name="reading-order" value="row" checked>
-              Left-to-right, top-to-bottom
-            </label>
-            <label>
-              <input type="radio" name="reading-order" value="column">
-              Top-to-bottom, left-to-right
-            </label>
-            <label>
-              <input type="radio" name="reading-order" value="both">
-              Either order
-            </label>
-            <label>
-              <input type="radio" name="reading-order" value="any">
-              Any anagram
-            </label>
-          </fieldset>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wordomino</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="src/game.js" defer></script>
+</head>
 
-          <fieldset>
-            <legend>Selection</legend>
-            <label>
-              <input id="strict-mode" type="checkbox">
-              Strict mode
-            </label>
-            <label>
-              <input id="untimed-mode" type="checkbox">
-              Untimed mode
-            </label>
-          </fieldset>
-        </aside>
+<body>
+  <main class="app">
+    <section class="play-area" aria-labelledby="title">
+      <button id="settings-button" class="corner-button settings-button" type="button" aria-expanded="false"
+        aria-controls="settings-panel" aria-label="Settings">
+        <span></span>
+        <span></span>
+        <span></span>
+        <output id="settings-summary" class="settings-summary" aria-hidden="true"></output>
+      </button>
+      <button id="info-button" class="info-button" type="button" aria-expanded="false" aria-controls="info-panel"
+        aria-label="How to play">i</button>
 
-        <aside id="info-panel" class="info-panel" hidden>
-          <h2>How to play</h2>
+      <aside id="settings-panel" class="settings-panel" hidden>
+        <fieldset>
+          <legend>Reading Order</legend>
+          <label>
+            <input type="radio" name="reading-order" value="row" checked>
+            Left-to-right, top-to-bottom
+          </label>
+          <label>
+            <input type="radio" name="reading-order" value="column">
+            Top-to-bottom, left-to-right
+          </label>
+          <label>
+            <input type="radio" name="reading-order" value="both">
+            Either order
+          </label>
+          <label>
+            <input type="radio" name="reading-order" value="any">
+            Any anagram
+          </label>
+        </fieldset>
 
-          <ul class="rules-list">
-            <li>Cover the board with four words.</li>
-            <li>Each word uses exactly four tiles.</li>
-            <li>Tiles must touch along their edges.</li>
-            <li>Read left-to-right, top-to-bottom.</li>
-            <li>Sorry, you can't restart the clock.</li>
-          </ul>
+        <fieldset>
+          <legend>Selection</legend>
+          <label>
+            <input id="strict-mode" type="checkbox">
+            Strict mode
+          </label>
+          <label>
+            <input id="untimed-mode" type="checkbox">
+            Untimed mode
+          </label>
+        </fieldset>
+      </aside>
 
-          <div class="example-columns" aria-label="Examples">
-            <div>
-              <span>valid</span>
-              <div class="example-grid is-valid" aria-label="Valid straight word">
-                <b style="grid-area: 1 / 1">W</b>
-                <b style="grid-area: 1 / 2">O</b>
-                <b style="grid-area: 1 / 3">R</b>
-                <b style="grid-area: 1 / 4">D</b>
-              </div>
-              <div class="example-grid is-valid" aria-label="Valid bent word">
-                <b style="grid-area: 1 / 1">W</b>
-                <b style="grid-area: 1 / 2">O</b>
-                <b style="grid-area: 2 / 2">R</b>
-                <b style="grid-area: 3 / 2">D</b>
-              </div>
-            </div>
-            <div>
-              <span>invalid</span>
-              <div class="example-grid is-invalid-example" aria-label="Invalid disconnected word">
-                <b style="grid-area: 1 / 1">W</b>
-                <b style="grid-area: 1 / 3">O</b>
-                <b style="grid-area: 2 / 2">R</b>
-                <b style="grid-area: 3 / 3">D</b>
-              </div>
-              <div class="example-grid is-invalid-example" aria-label="Invalid reading order">
-                <b style="grid-area: 2 / 1">W</b>
-                <b style="grid-area: 2 / 2">O</b>
-                <b style="grid-area: 2 / 3">D</b>
-                <b style="grid-area: 3 / 2">R</b>
-              </div>
-            </div>
-          </div>
+      <aside id="info-panel" class="info-panel" hidden>
+        <h2>How to play</h2>
 
-          <section class="settings-note" aria-label="Settings notes">
-            <h2>Settings</h2>
-            <ul class="rules-list rules-list-secondary">
-              <li>Other reading modes.</li>
-              <li>Strict mode, where tiles must be chosen in order.</li>
-              <li>Untimed mode.</li>
-              <li>Press ? for keyboard shortcuts.</li>
-            </ul>
-          </section>
-        </aside>
+        <ul class="rules-list">
+          <li>Cover the board with four words.</li>
+          <li>Each word uses exactly four tiles.</li>
+          <li>Tiles must touch along their edges.</li>
+          <li>Read left-to-right, top-to-bottom.</li>
+          <li>Sorry, you can't restart the clock.</li>
+        </ul>
 
-        <aside id="keyboard-panel" class="keyboard-panel" aria-label="Keyboard shortcuts" hidden>
-          <h2>Keyboard shortcuts</h2>
-          <dl class="shortcut-list">
-            <div><dt>?</dt><dd>This panel</dd></div>
-            <div><dt>I</dt><dd>Info</dd></div>
-            <div><dt>R</dt><dd>Restart</dd></div>
-            <div><dt>N</dt><dd>New</dd></div>
-            <div><dt>S</dt><dd>Strict</dd></div>
-            <div><dt>O</dt><dd>Ordinary</dd></div>
-            <div><dt>L</dt><dd>LR-TB</dd></div>
-            <div><dt>T</dt><dd>TB-LR</dd></div>
-            <div><dt>E</dt><dd>Either</dd></div>
-            <div><dt>A</dt><dd>Anagram</dd></div>
-          </dl>
-        </aside>
-
-        <div class="masthead">
+        <div class="example-columns" aria-label="Examples">
           <div>
-            <h1 id="title" class="title-hint" tabindex="0" data-hint="Tile the board with four-letter tetromino words.">Wordomino</h1>
+            <span>valid</span>
+            <div class="example-grid is-valid" aria-label="Valid straight word">
+              <b style="grid-area: 1 / 1">W</b>
+              <b style="grid-area: 1 / 2">O</b>
+              <b style="grid-area: 1 / 3">R</b>
+              <b style="grid-area: 1 / 4">D</b>
+            </div>
+            <div class="example-grid is-valid" aria-label="Valid bent word">
+              <b style="grid-area: 1 / 1">W</b>
+              <b style="grid-area: 1 / 2">O</b>
+              <b style="grid-area: 2 / 2">R</b>
+              <b style="grid-area: 3 / 2">D</b>
+            </div>
+          </div>
+          <div>
+            <span>invalid</span>
+            <div class="example-grid is-invalid-example" aria-label="Invalid disconnected word">
+              <b style="grid-area: 1 / 1">W</b>
+              <b style="grid-area: 1 / 3">O</b>
+              <b style="grid-area: 2 / 2">R</b>
+              <b style="grid-area: 3 / 3">D</b>
+            </div>
+            <div class="example-grid is-invalid-example" aria-label="Invalid reading order">
+              <b style="grid-area: 2 / 1">W</b>
+              <b style="grid-area: 2 / 2">O</b>
+              <b style="grid-area: 2 / 3">D</b>
+              <b style="grid-area: 3 / 2">R</b>
+            </div>
           </div>
         </div>
 
-        <div id="board" class="board" aria-label="Wordomino board"></div>
+        <section class="settings-note" aria-label="Settings notes">
+          <h2>Settings</h2>
+          <ul class="rules-list rules-list-secondary">
+            <li>Other reading modes.</li>
+            <li>Strict mode, where tiles must be chosen in order.</li>
+            <li>Untimed mode, if you just want to chill.</li>
+            <li>Press ? for keyboard shortcuts.</li>
+          </ul>
+        </section>
+      </aside>
 
-        <div id="selection-lines" class="selection-lines" aria-label="Selections"></div>
+      <aside id="keyboard-panel" class="keyboard-panel" aria-label="Keyboard shortcuts" hidden>
+        <h2>Keyboard shortcuts</h2>
+        <dl class="shortcut-list">
+          <div>
+            <dt>?</dt>
+            <dd>This panel</dd>
+          </div>
+          <div>
+            <dt>I</dt>
+            <dd>Info</dd>
+          </div>
+          <div>
+            <dt>R</dt>
+            <dd>Restart</dd>
+          </div>
+          <div>
+            <dt>N</dt>
+            <dd>New</dd>
+          </div>
+          <div>
+            <dt>S</dt>
+            <dd>Strict</dd>
+          </div>
+          <div>
+            <dt>O</dt>
+            <dd>Ordinary</dd>
+          </div>
+          <div>
+            <dt>L</dt>
+            <dd>LR-TB</dd>
+          </div>
+          <div>
+            <dt>T</dt>
+            <dd>TB-LR</dd>
+          </div>
+          <div>
+            <dt>E</dt>
+            <dd>Either</dd>
+          </div>
+          <div>
+            <dt>A</dt>
+            <dd>Anagram</dd>
+          </div>
+        </dl>
+      </aside>
 
-        <div id="completion-message" class="completion-message" aria-live="polite"></div>
-
-        <div class="toolbar" aria-label="Game controls">
-          <button id="restart-button" type="button">Restart</button>
-          <button id="new-button" type="button">New</button>
+      <div class="masthead">
+        <div>
+          <h1 id="title" class="title-hint" tabindex="0" data-hint="Tile the board with four-letter tetromino words.">
+            Wordomino</h1>
         </div>
-      </section>
-    </main>
-  </body>
+      </div>
+
+      <div id="board" class="board" aria-label="Wordomino board"></div>
+
+      <div id="selection-lines" class="selection-lines" aria-label="Selections"></div>
+
+      <div id="completion-message" class="completion-message" aria-live="polite"></div>
+
+      <div class="toolbar" aria-label="Game controls">
+        <button id="restart-button" type="button">Restart</button>
+        <button id="new-button" type="button">New</button>
+      </div>
+    </section>
+  </main>
+</body>
+
 </html>
