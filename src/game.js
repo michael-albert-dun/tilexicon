@@ -1,5 +1,6 @@
 const BOARD_SIZE = 4;
 const WORD_LENGTH = 4;
+const SESSION_STORAGE_KEY = "wordomino.currentPuzzle";
 const FALLBACK_WORDS = ["able", "boat", "care", "gear"];
 const READING_ORDER = {
   ROW: "row",
@@ -60,6 +61,7 @@ const state = {
   completedAt: null,
   readingOrder: READING_ORDER.ROW,
   strictMode: false,
+  untimedMode: false,
   allowedWords: new Set(FALLBACK_WORDS),
   anagrams: buildAnagramMap(FALLBACK_WORDS),
   preferredAnagrams: buildAnagramMap(FALLBACK_WORDS),
@@ -77,6 +79,7 @@ const elements = {
   settingsSummary: document.querySelector("#settings-summary"),
   readingOrderInputs: document.querySelectorAll("input[name='reading-order']"),
   strictModeInput: document.querySelector("#strict-mode"),
+  untimedModeInput: document.querySelector("#untimed-mode"),
   infoButton: document.querySelector("#info-button"),
   infoPanel: document.querySelector("#info-panel"),
   keyboardPanel: document.querySelector("#keyboard-panel"),
@@ -89,6 +92,7 @@ elements.readingOrderInputs.forEach((input) => {
   input.addEventListener("change", updateReadingOrder);
 });
 elements.strictModeInput.addEventListener("change", updateStrictMode);
+elements.untimedModeInput.addEventListener("change", updateUntimedMode);
 elements.infoButton.addEventListener("click", toggleInfoPanel);
 elements.restartButton.addEventListener("click", restartGame);
 elements.newButton.addEventListener("click", startNewGame);
@@ -102,7 +106,9 @@ startGame();
 
 async function startGame() {
   await loadGameData();
-  generatePuzzle();
+  if (!restoreStoredPuzzle()) {
+    generatePuzzle();
+  }
   render();
 }
 
@@ -181,6 +187,75 @@ function generatePuzzle() {
     };
   });
 
+  resetProgress();
+  saveCurrentPuzzle();
+}
+
+function restoreStoredPuzzle() {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY));
+
+    if (!isStoredPuzzle(stored)) {
+      return false;
+    }
+
+    state.readingOrder = stored.readingOrder;
+    state.strictMode = stored.strictMode;
+    state.untimedMode = stored.untimedMode || false;
+    state.board = makeBoardFromLetters(stored.letters);
+    state.solution = stored.solution;
+    state.startedAt = stored.startedAt || Date.now();
+    syncSettingsControls();
+    resetProgress({ resetTimer: false });
+    saveCurrentPuzzle();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function saveCurrentPuzzle() {
+  try {
+    sessionStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({
+        letters: state.board.map((cell) => cell.letter).join(""),
+        solution: state.solution,
+        readingOrder: state.readingOrder,
+        strictMode: state.strictMode,
+        untimedMode: state.untimedMode,
+        startedAt: state.startedAt
+      })
+    );
+  } catch {
+    // Storage can be unavailable in some browser privacy modes.
+  }
+}
+
+function isStoredPuzzle(stored) {
+  return (
+    stored &&
+    typeof stored.letters === "string" &&
+    stored.letters.length === BOARD_SIZE * BOARD_SIZE &&
+    stored.letters.split("").every((letter) => /^[A-Z]$/.test(letter)) &&
+    Object.values(READING_ORDER).includes(stored.readingOrder) &&
+    typeof stored.strictMode === "boolean" &&
+    (stored.untimedMode === undefined || typeof stored.untimedMode === "boolean") &&
+    Array.isArray(stored.solution) &&
+    (stored.startedAt === undefined || Number.isFinite(stored.startedAt))
+  );
+}
+
+function makeBoardFromLetters(letters) {
+  return Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, index) => ({
+    id: cellId(Math.floor(index / BOARD_SIZE), index % BOARD_SIZE),
+    row: Math.floor(index / BOARD_SIZE),
+    col: index % BOARD_SIZE,
+    letter: letters[index]
+  }));
+}
+
+function resetProgress({ resetTimer = true } = {}) {
   state.selection = [];
   state.locked.clear();
   state.moves = [];
@@ -188,7 +263,7 @@ function generatePuzzle() {
   state.clickStartedOnSelectedTile = false;
   state.dragSelection = null;
   state.invalidSelection = false;
-  state.startedAt = performance.now();
+  state.startedAt = resetTimer || state.startedAt === null ? Date.now() : state.startedAt;
   state.completedAt = null;
   clearInvalidTimer();
 }
@@ -393,7 +468,7 @@ function finishSelection() {
   state.selection = [];
   state.activeMoveIndex = null;
   if (state.locked.size === BOARD_SIZE * BOARD_SIZE) {
-    state.completedAt = performance.now();
+    state.completedAt = Date.now();
   }
   render();
 }
@@ -656,15 +731,7 @@ function deleteMove(index) {
 }
 
 function restartGame() {
-  state.selection = [];
-  state.locked.clear();
-  state.moves = [];
-  state.activeMoveIndex = null;
-  state.clickStartedOnSelectedTile = false;
-  state.dragSelection = null;
-  state.invalidSelection = false;
-  state.completedAt = null;
-  clearInvalidTimer();
+  resetProgress({ resetTimer: false });
   render();
 }
 
@@ -723,6 +790,10 @@ function updateStrictMode(event) {
   setStrictMode(event.target.checked);
 }
 
+function updateUntimedMode(event) {
+  setUntimedMode(event.target.checked);
+}
+
 function setReadingOrder(readingOrder) {
   if (state.readingOrder === readingOrder) {
     return;
@@ -731,14 +802,13 @@ function setReadingOrder(readingOrder) {
   const shouldRefresh = hasChosenTiles();
 
   state.readingOrder = readingOrder;
-  elements.readingOrderInputs.forEach((input) => {
-    input.checked = input.value === readingOrder;
-  });
-  updateSettingsSummary();
+  syncSettingsControls();
   closeSettingsPanel();
 
   if (shouldRefresh) {
     generatePuzzle();
+  } else {
+    saveCurrentPuzzle();
   }
 
   render();
@@ -750,8 +820,7 @@ function setStrictMode(enabled) {
   }
 
   state.strictMode = enabled;
-  elements.strictModeInput.checked = enabled;
-  updateSettingsSummary();
+  syncSettingsControls();
   closeSettingsPanel();
 
   if (enabled && hasChosenTiles()) {
@@ -760,6 +829,19 @@ function setStrictMode(enabled) {
     return;
   }
 
+  saveCurrentPuzzle();
+  render();
+}
+
+function setUntimedMode(enabled) {
+  if (state.untimedMode === enabled) {
+    return;
+  }
+
+  state.untimedMode = enabled;
+  syncSettingsControls();
+  closeSettingsPanel();
+  saveCurrentPuzzle();
   render();
 }
 
@@ -775,9 +857,20 @@ function updateSettingsSummary() {
     [READING_ORDER.ANY]: "Anagram"
   };
 
-  elements.settingsSummary.textContent = state.strictMode
-    ? `${labels[state.readingOrder]} | Strict`
-    : labels[state.readingOrder];
+  elements.settingsSummary.textContent = [
+    labels[state.readingOrder],
+    state.strictMode ? "Strict" : null,
+    state.untimedMode ? "Untimed" : null
+  ].filter(Boolean).join(" | ");
+}
+
+function syncSettingsControls() {
+  elements.readingOrderInputs.forEach((input) => {
+    input.checked = input.value === state.readingOrder;
+  });
+  elements.strictModeInput.checked = state.strictMode;
+  elements.untimedModeInput.checked = state.untimedMode;
+  updateSettingsSummary();
 }
 
 function toggleSettingsPanel(event) {
@@ -930,7 +1023,7 @@ function rebuildLockedMap() {
 function renderCompletionMessage() {
   elements.completionMessage.innerHTML = "";
 
-  if (!isPuzzleComplete()) {
+  if (!isPuzzleComplete() || state.untimedMode) {
     return;
   }
 

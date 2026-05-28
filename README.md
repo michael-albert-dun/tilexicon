@@ -161,7 +161,7 @@ http://localhost:8000
 Prototype started. The browser version currently supports random 4x4 boards
 generated from known tetromino tilings and common four-letter words, four-tile
 selections, tetromino-shape validation, broader dictionary validation, tile
-locking, configurable reading order, strict selection mode, click or drag
+locking, configurable reading order, strict selection mode, untimed mode, click or drag
 selection, a discreet rules popover, restart, new puzzle, and deleting a previous
 selection by clicking its
 mini-tile row and pressing Backspace. Restart removes all selections from the
