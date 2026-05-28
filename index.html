@@ -21,8 +21,42 @@
       </button>
       <button id="info-button" class="info-button" type="button" aria-expanded="false" aria-controls="info-panel"
         aria-label="How to play">i</button>
+      <button id="share-button" class="corner-button share-button" type="button"
+        aria-label="Copy puzzle with solution" title="Copy puzzle with solution">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
 
       <aside id="settings-panel" class="settings-panel" hidden>
+        <fieldset>
+          <legend>Board</legend>
+          <label>
+            <input type="radio" name="board-size" value="4x4" checked>
+            4 x 4
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="4x5">
+            4 x 5
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="5x4">
+            5 x 4
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="4x6">
+            4 x 6
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="6x4">
+            6 x 4
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="6x6">
+            6 x 6
+          </label>
+        </fieldset>
+
         <fieldset>
           <legend>Reading Order</legend>
           <label>
@@ -60,7 +94,7 @@
         <h2>How to play</h2>
 
         <ul class="rules-list">
-          <li>Cover the board with four words.</li>
+          <li>Cover the board with four-letter words.</li>
           <li>Each word uses exactly four tiles.</li>
           <li>Tiles must touch along their edges.</li>
           <li>Read left-to-right, top-to-bottom.</li>

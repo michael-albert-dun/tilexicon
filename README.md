@@ -146,6 +146,16 @@ Then open:
 http://localhost:8000
 ```
 
+Compact tetromino tiling files can be regenerated with:
+
+```sh
+scripts/generate-tetromino-tilings.py
+```
+
+Each line is a row-major tiling string. The characters `0` to `k - 1` identify
+the tetromino covering each cell, with labels assigned in first-uncovered-cell
+order.
+
 ## Open Questions
 
 - What board size feels best?
@@ -158,9 +168,9 @@ http://localhost:8000
 
 ## Status
 
-Prototype started. The browser version currently supports random 4x4 boards
-generated from known tetromino tilings and common four-letter words, four-tile
-selections, tetromino-shape validation, broader dictionary validation, tile
+Prototype started. The browser version currently supports random 4x4, 4x5,
+5x4, 4x6, 6x4, and 6x6 boards generated from known tetromino tilings and common
+four-letter words, four-tile selections, tetromino-shape validation, broader dictionary validation, tile
 locking, configurable reading order, strict selection mode, untimed mode, click or drag
 selection, a discreet rules popover, restart, new puzzle, and deleting a previous
 selection by clicking its
@@ -195,13 +205,12 @@ Regenerate it with:
 scripts/generate-word-list.sh
 ```
 
-The file `data/tetromino-tilings-4x4.json` contains all currently generated
-4x4 tetromino tilings under the starter assumptions: all five free tetromino
-families, rotations/reflections allowed, repeated shapes allowed. Regenerate it
-with:
+The compact files `data/tetromino-tilings-*.txt` contain generated tetromino
+tilings under the starter assumptions: all five free tetromino families,
+rotations/reflections allowed, repeated shapes allowed. Regenerate them with:
 
 ```sh
-scripts/generate-4x4-tilings.js
+scripts/generate-tetromino-tilings.py
 ```
 
 See `notes.md` for tetromino tiling references and background.
