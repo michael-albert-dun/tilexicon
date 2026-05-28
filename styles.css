@@ -138,9 +138,13 @@ button {
 .settings-panel fieldset {
   display: grid;
   gap: 8px;
-  margin: 0;
+  margin: 0 0 14px;
   padding: 0;
   border: 0;
+}
+
+.settings-panel fieldset:last-child {
+  margin-bottom: 0;
 }
 
 .settings-panel legend {

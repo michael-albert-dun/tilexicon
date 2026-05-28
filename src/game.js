@@ -59,6 +59,7 @@ const state = {
   startedAt: null,
   completedAt: null,
   readingOrder: READING_ORDER.ROW,
+  strictMode: false,
   allowedWords: new Set(FALLBACK_WORDS),
   anagrams: buildAnagramMap(FALLBACK_WORDS),
   preferredAnagrams: buildAnagramMap(FALLBACK_WORDS),
@@ -74,6 +75,7 @@ const elements = {
   settingsButton: document.querySelector("#settings-button"),
   settingsPanel: document.querySelector("#settings-panel"),
   readingOrderInputs: document.querySelectorAll("input[name='reading-order']"),
+  strictModeInput: document.querySelector("#strict-mode"),
   infoButton: document.querySelector("#info-button"),
   infoPanel: document.querySelector("#info-panel"),
   clearButton: document.querySelector("#clear-button"),
@@ -84,6 +86,7 @@ elements.settingsButton.addEventListener("click", toggleSettingsPanel);
 elements.readingOrderInputs.forEach((input) => {
   input.addEventListener("change", updateReadingOrder);
 });
+elements.strictModeInput.addEventListener("change", updateStrictMode);
 elements.infoButton.addEventListener("click", toggleInfoPanel);
 elements.clearButton.addEventListener("click", clearCurrentSelection);
 elements.resetButton.addEventListener("click", resetGame);
@@ -515,10 +518,13 @@ function preferredWord(words) {
 
 function resolveSelectionWord(selection) {
   const cells = selection.map(getCellById);
+  const selectedWord = cells.map((cell) => cell.letter).join("");
+
+  if (state.strictMode) {
+    return isAllowedWord(selectedWord) ? selectedWord : null;
+  }
 
   if (state.readingOrder === READING_ORDER.ANY) {
-    const selectedWord = cells.map((cell) => cell.letter).join("");
-
     if (isAllowedWord(selectedWord)) {
       return selectedWord;
     }
@@ -532,8 +538,6 @@ function resolveSelectionWord(selection) {
   }
 
   if (state.readingOrder === READING_ORDER.BOTH) {
-    const selectedWord = cells.map((cell) => cell.letter).join("");
-
     if (isAllowedWord(selectedWord)) {
       return selectedWord;
     }
@@ -709,8 +713,15 @@ function resetGame() {
 
 function updateReadingOrder(event) {
   state.readingOrder = event.target.value;
+  closeSettingsPanel();
   generatePuzzle();
   render();
+}
+
+function updateStrictMode(event) {
+  state.strictMode = event.target.checked;
+  closeSettingsPanel();
+  clearCurrentSelection();
 }
 
 function toggleSettingsPanel(event) {
