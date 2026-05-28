@@ -165,7 +165,11 @@ locking, configurable reading order, strict selection mode, untimed mode, click 
 selection, a discreet rules popover, restart, new puzzle, and deleting a previous
 selection by clicking its
 mini-tile row and pressing Backspace. Restart removes all selections from the
-current board; New generates a new board. Backspace also removes the last tile
+current board; New generates a new board. A board can be loaded with
+`?grid=CBOAARATGEBLEARE`, plus optional `order=row|column|both|any`,
+`strict=0|1`, `untimed=0|1`, and a 32-letter obfuscated `sol` value when a
+generated solution is available. Grid-only links default to `row`, ordinary, timed play.
+Backspace also removes the last tile
 from the current in-progress selection.
 Double-clicking a displayed mini-tile row deletes that full word; double-clicking
 a completed group tile in the main grid unlocks that group and leaves the other

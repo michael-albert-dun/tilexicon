@@ -143,7 +143,8 @@ button {
 
 .info-panel,
 .settings-panel,
-.keyboard-panel {
+.keyboard-panel,
+.print-panel {
   position: absolute;
   top: 48px;
   z-index: 4;
@@ -167,6 +168,12 @@ button {
 .keyboard-panel {
   left: 50%;
   width: min(250px, calc(100% - 28px));
+  transform: translateX(-50%);
+}
+
+.print-panel {
+  left: 50%;
+  width: min(310px, calc(100% - 28px));
   transform: translateX(-50%);
 }
 
@@ -231,6 +238,7 @@ button {
 }
 
 .keyboard-panel h2,
+.print-panel h2,
 .info-panel h2,
 .settings-note h2 {
   margin: 0 0 3px;
@@ -276,6 +284,19 @@ button {
 
 .shortcut-list dd {
   margin: 0;
+}
+
+.print-grid {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--tile-border);
+  border-radius: 10px;
+  background: var(--tile);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
 }
 
 .example-columns {
@@ -590,7 +611,7 @@ h1 {
   text-align: center;
 }
 
-.completion-message:not(:empty) {
+.completion-message.is-complete {
   min-height: calc(var(--selection-space) - var(--complete-row-space));
 }
 
@@ -606,6 +627,10 @@ h1 {
   font-size: clamp(3.2rem, 13vw, 5.2rem);
   font-weight: 380;
   line-height: 0.94;
+}
+
+.completion-message strong.is-assisted {
+  color: var(--invalid-border);
 }
 
 .toolbar button {

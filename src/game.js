@@ -1,6 +1,7 @@
 const BOARD_SIZE = 4;
 const WORD_LENGTH = 4;
 const SESSION_STORAGE_KEY = "wordomino.currentPuzzle";
+const CHEAT_CODE = ["q", "q", "q"];
 const FALLBACK_WORDS = ["able", "boat", "care", "gear"];
 const READING_ORDER = {
   ROW: "row",
@@ -57,6 +58,8 @@ const state = {
   dragSelection: null,
   invalidSelection: false,
   invalidClearTimer: null,
+  cheatIndex: 0,
+  solvedWithHelp: false,
   startedAt: null,
   completedAt: null,
   readingOrder: READING_ORDER.ROW,
@@ -83,6 +86,8 @@ const elements = {
   infoButton: document.querySelector("#info-button"),
   infoPanel: document.querySelector("#info-panel"),
   keyboardPanel: document.querySelector("#keyboard-panel"),
+  printPanel: document.querySelector("#print-panel"),
+  printGrid: document.querySelector("#print-grid"),
   restartButton: document.querySelector("#restart-button"),
   newButton: document.querySelector("#new-button")
 };
@@ -106,7 +111,7 @@ startGame();
 
 async function startGame() {
   await loadGameData();
-  if (!restoreStoredPuzzle()) {
+  if (!loadPuzzleFromUrl() && !restoreStoredPuzzle()) {
     generatePuzzle();
   }
   render();
@@ -191,6 +196,221 @@ function generatePuzzle() {
   saveCurrentPuzzle();
 }
 
+function loadPuzzleFromUrl() {
+  const letters = readUrlGrid();
+
+  if (!letters) {
+    return false;
+  }
+
+  applyUrlSettings();
+  state.board = makeBoardFromLetters(letters);
+  state.solution = readUrlSolution(letters);
+  syncSettingsControls();
+  resetProgress();
+  saveCurrentPuzzle();
+  return true;
+}
+
+function readUrlGrid() {
+  const params = new URLSearchParams(window.location.search);
+  const grid = params.get("grid");
+
+  if (!grid || !/^[a-z]{16}$/i.test(grid)) {
+    return null;
+  }
+
+  return grid.toUpperCase();
+}
+
+function applyUrlSettings() {
+  const params = new URLSearchParams(window.location.search);
+  const order = params.get("order");
+
+  state.readingOrder = Object.values(READING_ORDER).includes(order)
+    ? order
+    : READING_ORDER.ROW;
+  state.strictMode = parseUrlBoolean(params.get("strict"), false);
+  state.untimedMode = parseUrlBoolean(params.get("untimed"), false);
+}
+
+function parseUrlBoolean(value, fallback) {
+  if (value === null) {
+    return fallback;
+  }
+
+  return ["1", "t", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
+function makeGridString() {
+  return state.board.map((cell) => cell.letter).join("");
+}
+
+function makeGridUrl() {
+  const url = new URL(window.location.href);
+  const grid = makeGridString();
+
+  url.searchParams.set("grid", grid);
+  url.searchParams.set("order", state.readingOrder);
+  url.searchParams.set("strict", state.strictMode ? "1" : "0");
+  url.searchParams.set("untimed", state.untimedMode ? "1" : "0");
+  url.searchParams.delete("sol");
+
+  if (state.solution.length > 0) {
+    url.searchParams.set("sol", encodeSolution(state.solution, grid));
+  }
+
+  url.hash = "";
+  return url.toString();
+}
+
+function readUrlSolution(grid) {
+  const params = new URLSearchParams(window.location.search);
+  const solution = decodeSolution(params.get("sol"), grid);
+
+  return Array.isArray(solution) ? solution : [];
+}
+
+function encodeSolution(solution, grid) {
+  // This is only meant to keep the answer from being immediately readable in a URL.
+  // It is obfuscation, not security.
+  const pieceByCell = new Map();
+  const values = [];
+
+  solution.forEach((move, pieceIndex) => {
+    move.cells.forEach((id) => pieceByCell.set(id, pieceIndex));
+  });
+
+  state.board.forEach((cell) => {
+    const pieceIndex = pieceByCell.get(cell.id);
+
+    if (pieceIndex === undefined) {
+      return;
+    }
+
+    values.push(letterToInt(cell.letter));
+    values.push(pieceIndex + 4 * randomInt(6));
+  });
+
+  return values.length === BOARD_SIZE * BOARD_SIZE * 2
+    ? cumulativeEncode(values)
+    : "";
+}
+
+function decodeSolution(encoded, grid) {
+  if (!encoded || !/^[a-z]{32}$/i.test(encoded)) {
+    return null;
+  }
+
+  const values = cumulativeDecode(encoded.toLowerCase());
+
+  if (!values || values.length !== BOARD_SIZE * BOARD_SIZE * 2) {
+    return null;
+  }
+
+  const pieces = Array.from({ length: BOARD_SIZE }, () => []);
+
+  for (let index = 0; index < BOARD_SIZE * BOARD_SIZE; index += 1) {
+    const letterValue = values[index * 2];
+    const pieceIndex = values[index * 2 + 1] % BOARD_SIZE;
+
+    if (letterValue !== letterToInt(grid[index]) || values[index * 2 + 1] > 23) {
+      return null;
+    }
+
+    pieces[pieceIndex].push(cellId(Math.floor(index / BOARD_SIZE), index % BOARD_SIZE));
+  }
+
+  const solution = pieces.map((cells) => makeSolutionMove(cells));
+
+  return isValidSolution(solution) ? solution : null;
+}
+
+function makeSolutionMove(cells) {
+  const cellObjects = cells.map(getCellById);
+  const word = resolveSolutionWord(cellObjects) || readCells(cellObjects, primaryReadingOrder());
+
+  return {
+    cells,
+    word,
+    shape: classifyTetromino(cellObjects)
+  };
+}
+
+function resolveSolutionWord(cells) {
+  if (state.readingOrder === READING_ORDER.ANY) {
+    const signature = anagramSignature(cells.map((cell) => cell.letter).join(""));
+    return (
+      state.preferredAnagrams.get(signature)?.[0] ||
+      state.anagrams.get(signature)?.[0] ||
+      null
+    )?.toUpperCase() || null;
+  }
+
+  if (state.readingOrder === READING_ORDER.BOTH) {
+    return preferredWord([
+      readCells(cells, READING_ORDER.ROW),
+      readCells(cells, READING_ORDER.COLUMN)
+    ]);
+  }
+
+  const word = readCells(cells, state.readingOrder);
+  return isAllowedWord(word) ? word : null;
+}
+
+function cumulativeEncode(values) {
+  let sum = 0;
+
+  return values.map((value) => {
+    sum += value;
+    return intToLetter((17 + sum) % 26);
+  }).join("");
+}
+
+function cumulativeDecode(encoded) {
+  let previous = 17;
+
+  return [...encoded].map((letter) => {
+    const current = letterToInt(letter);
+    const value = (current - previous + 26) % 26;
+
+    previous = current;
+    return value;
+  });
+}
+
+function letterToInt(letter) {
+  return letter.toUpperCase().charCodeAt(0) - 65;
+}
+
+function intToLetter(value) {
+  return String.fromCharCode(97 + value);
+}
+
+function randomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
+function isValidSolution(solution) {
+  const ids = new Set(state.board.map((cell) => cell.id));
+  const usedIds = new Set(solution.flatMap((move) => move.cells));
+
+  return (
+    Array.isArray(solution) &&
+    solution.length === BOARD_SIZE &&
+    usedIds.size === BOARD_SIZE * BOARD_SIZE &&
+    solution.every((move) => (
+      Array.isArray(move.cells) &&
+      move.cells.length === WORD_LENGTH &&
+      move.cells.every((id) => ids.has(id)) &&
+      isEdgeConnected(move.cells.map(getCellById)) &&
+      typeof move.word === "string" &&
+      /^[a-z]{4}$/i.test(move.word) &&
+      typeof move.shape === "string"
+    ))
+  );
+}
+
 function restoreStoredPuzzle() {
   try {
     const stored = JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY));
@@ -219,7 +439,7 @@ function saveCurrentPuzzle() {
     sessionStorage.setItem(
       SESSION_STORAGE_KEY,
       JSON.stringify({
-        letters: state.board.map((cell) => cell.letter).join(""),
+        letters: makeGridString(),
         solution: state.solution,
         readingOrder: state.readingOrder,
         strictMode: state.strictMode,
@@ -263,6 +483,8 @@ function resetProgress({ resetTimer = true } = {}) {
   state.clickStartedOnSelectedTile = false;
   state.dragSelection = null;
   state.invalidSelection = false;
+  state.cheatIndex = 0;
+  state.solvedWithHelp = false;
   state.startedAt = resetTimer || state.startedAt === null ? Date.now() : state.startedAt;
   state.completedAt = null;
   clearInvalidTimer();
@@ -725,6 +947,7 @@ function deleteMove(index) {
   state.dragSelection = null;
   state.invalidSelection = false;
   state.completedAt = null;
+  state.solvedWithHelp = false;
   clearInvalidTimer();
   rebuildLockedMap();
   render();
@@ -772,6 +995,7 @@ function activateCompletedGroupWithoutCell(cellId) {
   state.dragSelection = null;
   state.invalidSelection = false;
   state.completedAt = null;
+  state.solvedWithHelp = false;
   clearInvalidTimer();
   rebuildLockedMap();
   render();
@@ -838,9 +1062,18 @@ function setUntimedMode(enabled) {
     return;
   }
 
+  const shouldRefresh = !enabled || isPuzzleComplete();
+
   state.untimedMode = enabled;
   syncSettingsControls();
   closeSettingsPanel();
+
+  if (shouldRefresh) {
+    generatePuzzle();
+    render();
+    return;
+  }
+
   saveCurrentPuzzle();
   render();
 }
@@ -884,6 +1117,7 @@ function toggleSettingsPanel(event) {
   if (!isOpen) {
     closeInfoPanel();
     closeKeyboardPanel();
+    closePrintPanel();
   }
 }
 
@@ -898,6 +1132,7 @@ function toggleInfoPanel(event) {
   if (!isOpen) {
     closeSettingsPanel();
     closeKeyboardPanel();
+    closePrintPanel();
   }
 }
 
@@ -909,7 +1144,18 @@ function toggleKeyboardPanel() {
   if (!isOpen) {
     closeInfoPanel();
     closeSettingsPanel();
+    closePrintPanel();
   }
+}
+
+function showPrintPanel() {
+  closeInfoPanel();
+  closeSettingsPanel();
+  closeKeyboardPanel();
+  elements.printGrid.value = makeGridUrl();
+  elements.printPanel.hidden = false;
+  elements.printGrid.focus();
+  elements.printGrid.select();
 }
 
 function closePanelsFromOutside(event) {
@@ -932,6 +1178,10 @@ function closePanelsFromOutside(event) {
   if (!elements.keyboardPanel.hidden && !elements.keyboardPanel.contains(event.target)) {
     closeKeyboardPanel();
   }
+
+  if (!elements.printPanel.hidden && !elements.printPanel.contains(event.target)) {
+    closePrintPanel();
+  }
 }
 
 function closeInfoPanel() {
@@ -948,14 +1198,28 @@ function closeKeyboardPanel() {
   elements.keyboardPanel.hidden = true;
 }
 
+function closePrintPanel() {
+  elements.printPanel.hidden = true;
+}
+
 function handleKeydown(event) {
   if (
     event.key === "Escape" &&
-    (!elements.infoPanel.hidden || !elements.settingsPanel.hidden || !elements.keyboardPanel.hidden)
+    (
+      !elements.infoPanel.hidden ||
+      !elements.settingsPanel.hidden ||
+      !elements.keyboardPanel.hidden ||
+      !elements.printPanel.hidden
+    )
   ) {
     closeInfoPanel();
     closeSettingsPanel();
     closeKeyboardPanel();
+    closePrintPanel();
+    return;
+  }
+
+  if (handleCheatCode(event)) {
     return;
   }
 
@@ -992,6 +1256,7 @@ function handleShortcut(event) {
     s: () => setStrictMode(true),
     o: () => setStrictMode(false),
     n: () => startNewGame(),
+    p: () => showPrintPanel(),
     r: () => restartGame(),
     l: () => setReadingOrder(READING_ORDER.ROW),
     t: () => setReadingOrder(READING_ORDER.COLUMN),
@@ -1008,6 +1273,30 @@ function handleShortcut(event) {
   return true;
 }
 
+function handleCheatCode(event) {
+  if (event.metaKey || event.ctrlKey || event.altKey || isFormField(event.target)) {
+    return false;
+  }
+
+  const key = event.key.toLowerCase();
+
+  if (key === CHEAT_CODE[state.cheatIndex]) {
+    event.preventDefault();
+    state.cheatIndex += 1;
+
+    if (state.cheatIndex === CHEAT_CODE.length) {
+      state.cheatIndex = 0;
+      solveWithHelp();
+      return true;
+    }
+
+    return false;
+  }
+
+  state.cheatIndex = key === CHEAT_CODE[0] ? 1 : 0;
+  return false;
+}
+
 function isFormField(element) {
   return ["INPUT", "TEXTAREA", "SELECT"].includes(element?.tagName);
 }
@@ -1020,8 +1309,30 @@ function rebuildLockedMap() {
   });
 }
 
+function solveWithHelp() {
+  if (state.solution.length === 0) {
+    return;
+  }
+
+  state.selection = [];
+  state.activeMoveIndex = null;
+  state.dragSelection = null;
+  state.invalidSelection = false;
+  state.completedAt = Date.now();
+  state.solvedWithHelp = true;
+  clearInvalidTimer();
+  state.moves = state.solution.map((move) => ({
+    cells: [...move.cells],
+    word: move.word,
+    shape: move.shape
+  }));
+  rebuildLockedMap();
+  render();
+}
+
 function renderCompletionMessage() {
   elements.completionMessage.innerHTML = "";
+  elements.completionMessage.classList.toggle("is-complete", isPuzzleComplete());
 
   if (!isPuzzleComplete() || state.untimedMode) {
     return;
@@ -1032,6 +1343,7 @@ function renderCompletionMessage() {
 
   label.className = "completion-label";
   label.textContent = "Time";
+  time.className = state.solvedWithHelp ? "is-assisted" : "";
   time.textContent = formatElapsedTime(state.completedAt - state.startedAt);
 
   elements.completionMessage.append(label, time);
