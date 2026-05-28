@@ -105,6 +105,34 @@ button {
   transform: translateX(2px);
 }
 
+.settings-summary {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 5;
+  width: max-content;
+  max-width: 180px;
+  padding: 6px 9px;
+  border: 1px solid var(--tile-border);
+  border-radius: 999px;
+  background: var(--tile);
+  box-shadow: 0 10px 24px rgba(45, 62, 76, 0.12);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 560;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.settings-button:hover .settings-summary,
+.settings-button:focus-visible .settings-summary {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .corner-button:hover,
 .corner-button[aria-expanded="true"],
 .info-button:hover,
@@ -114,7 +142,8 @@ button {
 }
 
 .info-panel,
-.settings-panel {
+.settings-panel,
+.keyboard-panel {
   position: absolute;
   top: 48px;
   z-index: 4;
@@ -133,6 +162,12 @@ button {
 
 .settings-panel {
   left: 14px;
+}
+
+.keyboard-panel {
+  left: 50%;
+  width: min(250px, calc(100% - 28px));
+  transform: translateX(-50%);
 }
 
 .settings-panel fieldset {
@@ -189,6 +224,58 @@ button {
   margin: 0 8px 2px 1px;
   border-radius: 50%;
   background: var(--selected-border);
+}
+
+.settings-note {
+  margin-top: 6px;
+}
+
+.keyboard-panel h2,
+.info-panel h2,
+.settings-note h2 {
+  margin: 0 0 3px;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 620;
+  line-height: 1.2;
+}
+
+.rules-list-secondary {
+  gap: 3px;
+  font-size: 0.82rem;
+  line-height: 1.28;
+}
+
+.shortcut-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 12px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.shortcut-list div {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 7px;
+}
+
+.shortcut-list dt {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border: 1px solid var(--tile-border);
+  border-radius: 7px;
+  background: var(--tile);
+  color: var(--ink);
+  font-weight: 620;
+}
+
+.shortcut-list dd {
+  margin: 0;
 }
 
 .example-columns {

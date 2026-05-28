@@ -162,10 +162,10 @@ Prototype started. The browser version currently supports random 4x4 boards
 generated from known tetromino tilings and common four-letter words, four-tile
 selections, tetromino-shape validation, broader dictionary validation, tile
 locking, configurable reading order, strict selection mode, click or drag
-selection, a discreet rules popover, clear, reset, and deleting a previous
+selection, a discreet rules popover, restart, new puzzle, and deleting a previous
 selection by clicking its
-mini-tile row and pressing Backspace. Clear removes all selections from the
-current board; Reset generates a new board. Backspace also removes the last tile
+mini-tile row and pressing Backspace. Restart removes all selections from the
+current board; New generates a new board. Backspace also removes the last tile
 from the current in-progress selection.
 Double-clicking a displayed mini-tile row deletes that full word; double-clicking
 a completed group tile in the main grid unlocks that group and leaves the other

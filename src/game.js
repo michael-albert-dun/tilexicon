@@ -74,12 +74,14 @@ const elements = {
   completionMessage: document.querySelector("#completion-message"),
   settingsButton: document.querySelector("#settings-button"),
   settingsPanel: document.querySelector("#settings-panel"),
+  settingsSummary: document.querySelector("#settings-summary"),
   readingOrderInputs: document.querySelectorAll("input[name='reading-order']"),
   strictModeInput: document.querySelector("#strict-mode"),
   infoButton: document.querySelector("#info-button"),
   infoPanel: document.querySelector("#info-panel"),
-  clearButton: document.querySelector("#clear-button"),
-  resetButton: document.querySelector("#reset-button")
+  keyboardPanel: document.querySelector("#keyboard-panel"),
+  restartButton: document.querySelector("#restart-button"),
+  newButton: document.querySelector("#new-button")
 };
 
 elements.settingsButton.addEventListener("click", toggleSettingsPanel);
@@ -88,8 +90,8 @@ elements.readingOrderInputs.forEach((input) => {
 });
 elements.strictModeInput.addEventListener("change", updateStrictMode);
 elements.infoButton.addEventListener("click", toggleInfoPanel);
-elements.clearButton.addEventListener("click", clearCurrentSelection);
-elements.resetButton.addEventListener("click", resetGame);
+elements.restartButton.addEventListener("click", restartGame);
+elements.newButton.addEventListener("click", startNewGame);
 document.addEventListener("keydown", handleKeydown);
 document.addEventListener("click", closePanelsFromOutside);
 document.addEventListener("pointermove", handleDragMove);
@@ -126,6 +128,8 @@ async function loadGameData() {
   if (Array.isArray(tilings) && tilings.length > 0) {
     state.tilings = tilings;
   }
+
+  updateSettingsSummary();
 }
 
 async function fetchText(url) {
@@ -651,7 +655,7 @@ function deleteMove(index) {
   render();
 }
 
-function clearCurrentSelection() {
+function restartGame() {
   state.selection = [];
   state.locked.clear();
   state.moves = [];
@@ -706,22 +710,74 @@ function activateCompletedGroupWithoutCell(cellId) {
   render();
 }
 
-function resetGame() {
+function startNewGame() {
   generatePuzzle();
   render();
 }
 
 function updateReadingOrder(event) {
-  state.readingOrder = event.target.value;
-  closeSettingsPanel();
-  generatePuzzle();
-  render();
+  setReadingOrder(event.target.value);
 }
 
 function updateStrictMode(event) {
-  state.strictMode = event.target.checked;
+  setStrictMode(event.target.checked);
+}
+
+function setReadingOrder(readingOrder) {
+  if (state.readingOrder === readingOrder) {
+    return;
+  }
+
+  const shouldRefresh = hasChosenTiles();
+
+  state.readingOrder = readingOrder;
+  elements.readingOrderInputs.forEach((input) => {
+    input.checked = input.value === readingOrder;
+  });
+  updateSettingsSummary();
   closeSettingsPanel();
-  clearCurrentSelection();
+
+  if (shouldRefresh) {
+    generatePuzzle();
+  }
+
+  render();
+}
+
+function setStrictMode(enabled) {
+  if (state.strictMode === enabled) {
+    return;
+  }
+
+  state.strictMode = enabled;
+  elements.strictModeInput.checked = enabled;
+  updateSettingsSummary();
+  closeSettingsPanel();
+
+  if (enabled && hasChosenTiles()) {
+    generatePuzzle();
+    render();
+    return;
+  }
+
+  render();
+}
+
+function hasChosenTiles() {
+  return state.selection.length > 0 || state.moves.length > 0;
+}
+
+function updateSettingsSummary() {
+  const labels = {
+    [READING_ORDER.ROW]: "LR-TB",
+    [READING_ORDER.COLUMN]: "TB-LR",
+    [READING_ORDER.BOTH]: "Either",
+    [READING_ORDER.ANY]: "Anagram"
+  };
+
+  elements.settingsSummary.textContent = state.strictMode
+    ? `${labels[state.readingOrder]} | Strict`
+    : labels[state.readingOrder];
 }
 
 function toggleSettingsPanel(event) {
@@ -734,6 +790,7 @@ function toggleSettingsPanel(event) {
 
   if (!isOpen) {
     closeInfoPanel();
+    closeKeyboardPanel();
   }
 }
 
@@ -746,6 +803,18 @@ function toggleInfoPanel(event) {
   elements.infoButton.setAttribute("aria-expanded", String(!isOpen));
 
   if (!isOpen) {
+    closeSettingsPanel();
+    closeKeyboardPanel();
+  }
+}
+
+function toggleKeyboardPanel() {
+  const isOpen = !elements.keyboardPanel.hidden;
+
+  elements.keyboardPanel.hidden = isOpen;
+
+  if (!isOpen) {
+    closeInfoPanel();
     closeSettingsPanel();
   }
 }
@@ -766,6 +835,10 @@ function closePanelsFromOutside(event) {
   ) {
     closeSettingsPanel();
   }
+
+  if (!elements.keyboardPanel.hidden && !elements.keyboardPanel.contains(event.target)) {
+    closeKeyboardPanel();
+  }
 }
 
 function closeInfoPanel() {
@@ -778,10 +851,22 @@ function closeSettingsPanel() {
   elements.settingsButton.setAttribute("aria-expanded", "false");
 }
 
+function closeKeyboardPanel() {
+  elements.keyboardPanel.hidden = true;
+}
+
 function handleKeydown(event) {
-  if (event.key === "Escape" && (!elements.infoPanel.hidden || !elements.settingsPanel.hidden)) {
+  if (
+    event.key === "Escape" &&
+    (!elements.infoPanel.hidden || !elements.settingsPanel.hidden || !elements.keyboardPanel.hidden)
+  ) {
     closeInfoPanel();
     closeSettingsPanel();
+    closeKeyboardPanel();
+    return;
+  }
+
+  if (handleShortcut(event)) {
     return;
   }
 
@@ -800,6 +885,38 @@ function handleKeydown(event) {
     state.selection.pop();
     render();
   }
+}
+
+function handleShortcut(event) {
+  if (event.metaKey || event.ctrlKey || event.altKey || isFormField(event.target)) {
+    return false;
+  }
+
+  const key = event.key.toLowerCase();
+  const shortcuts = {
+    "?": () => toggleKeyboardPanel(),
+    i: () => toggleInfoPanel(event),
+    s: () => setStrictMode(true),
+    o: () => setStrictMode(false),
+    n: () => startNewGame(),
+    r: () => restartGame(),
+    l: () => setReadingOrder(READING_ORDER.ROW),
+    t: () => setReadingOrder(READING_ORDER.COLUMN),
+    e: () => setReadingOrder(READING_ORDER.BOTH),
+    a: () => setReadingOrder(READING_ORDER.ANY)
+  };
+
+  if (!shortcuts[key]) {
+    return false;
+  }
+
+  event.preventDefault();
+  shortcuts[key]();
+  return true;
+}
+
+function isFormField(element) {
+  return ["INPUT", "TEXTAREA", "SELECT"].includes(element?.tagName);
 }
 
 function rebuildLockedMap() {
