@@ -107,29 +107,47 @@ button {
   display: block;
 }
 
-.share-button span:nth-child(1),
-.share-button span:nth-child(2) {
-  width: 12px;
-  height: 1px;
-  background: currentColor;
-  transform-origin: left center;
-}
-
 .share-button span:nth-child(1) {
-  transform: translate(-3px, -1px) rotate(-28deg);
+  width: 13px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-top: 0;
+  border-radius: 2px 2px 3px 3px;
+  transform: translateY(4px);
 }
 
 .share-button span:nth-child(2) {
-  transform: translate(-3px, 1px) rotate(28deg);
+  width: 1.5px;
+  height: 14px;
+  background: currentColor;
+  transform: translateY(-3px);
 }
 
 .share-button span:nth-child(3) {
-  width: 5px;
-  height: 5px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  box-shadow: -9px -5px 0 -1px currentColor, -9px 5px 0 -1px currentColor;
-  transform: translate(5px, 0);
+  width: 7px;
+  height: 7px;
+  border-top: 1.5px solid currentColor;
+  border-left: 1.5px solid currentColor;
+  transform: translateY(-7px) rotate(45deg);
+}
+
+.share-button.is-copied::after {
+  content: "Copied to clipboard";
+  position: absolute;
+  left: calc(100% + 9px);
+  bottom: 50%;
+  z-index: 6;
+  width: max-content;
+  padding: 6px 9px;
+  border: 1px solid var(--tile-border);
+  border-radius: 999px;
+  background: var(--tile);
+  box-shadow: 0 8px 18px rgba(45, 62, 76, 0.11);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 560;
+  line-height: 1;
+  transform: translateY(50%);
 }
 
 .settings-button span {

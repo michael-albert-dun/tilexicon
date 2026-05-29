@@ -20,18 +20,32 @@ and larger boards.
   polyominoes:
   https://barequet.cs.technion.ac.il/poly-papers/math-cs/1981-Redelmeier.pdf
 
-## Current 4x4 Tiling Assumptions
+## Current Tiling Files
 
-The generated file `data/tetromino-tilings-4x4.json` currently assumes:
+The compact files `data/tetromino-tilings-*.txt` contain generated tetromino
+tilings for the supported board sizes:
 
-- A 4x4 rectangular board.
+- `4x4`
+- `4x5`
+- `5x4`
+- `4x6`
+- `6x4`
+- `6x6`
+
+The generated files assume:
+
+- Rectangular boards.
 - All five free tetromino families are allowed: `I`, `O`, `T`, `L`, and `S`.
 - Rotations and reflections are allowed.
 - Repeated shapes are allowed.
 - Tilings are stored without regard to move order.
 
-Regenerate the list with:
+Each line is a row-major tiling string. The characters `0` to `k - 1` identify
+the tetromino covering each cell, with labels assigned in first-uncovered-cell
+order.
+
+Regenerate the files with:
 
 ```sh
-scripts/generate-4x4-tilings.js
+scripts/generate-tetromino-tilings.py
 ```
