@@ -17,7 +17,7 @@ BASE_SHAPES = {
     "S": ((0, 1), (0, 2), (1, 0), (1, 1)),
 }
 
-DEFAULT_SIZES = ((4, 4), (4, 5), (5, 4), (4, 6), (6, 4), (6, 6))
+DEFAULT_SIZES = ((4, 4), (4, 5), (4, 6), (6, 6))
 
 
 def main() -> None:
@@ -41,7 +41,9 @@ def main() -> None:
 def parse_size(size: str) -> tuple[int, int]:
     try:
         rows, cols = size.lower().split("x", 1)
-        return int(rows), int(cols)
+        parsed_rows = int(rows)
+        parsed_cols = int(cols)
+        return (parsed_rows, parsed_cols) if parsed_rows <= parsed_cols else (parsed_cols, parsed_rows)
     except ValueError as exc:
         raise argparse.ArgumentTypeError(f"Invalid size: {size}") from exc
 

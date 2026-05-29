@@ -2,7 +2,9 @@ const WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
 const CHEAT_CODE = ["q", "q", "q"];
-const BOARD_SIZES = [
+const DOUBLE_TAP_MS = 320;
+const CONFIG = window.TilexiconConfig || {};
+const ALL_BOARD_SIZES = [
   { rows: 4, cols: 4, label: "4 x 4" },
   { rows: 4, cols: 5, label: "4 x 5" },
   { rows: 5, cols: 4, label: "5 x 4" },
@@ -10,6 +12,9 @@ const BOARD_SIZES = [
   { rows: 6, cols: 4, label: "6 x 4" },
   { rows: 6, cols: 6, label: "6 x 6" }
 ];
+const BOARD_SIZES = ALL_BOARD_SIZES.filter((size) => (
+  CONFIG.enable6x6 !== false || sizeKey(size.rows, size.cols) !== "6x6"
+));
 const DEFAULT_SIZE = BOARD_SIZES[0];
 const FALLBACK_TILINGS = {
   "4x4": ["0000111122223333"]
@@ -21,6 +26,10 @@ const READING_ORDER = {
   BOTH: "both",
   ANY: "any"
 };
+const TIMER_MODE = {
+  TIMED: "timed",
+  UNTIMED: "untimed"
+};
 const state = {
   rows: DEFAULT_SIZE.rows,
   cols: DEFAULT_SIZE.cols,
@@ -30,6 +39,8 @@ const state = {
   moves: [],
   activeMoveIndex: null,
   clickStartedOnSelectedTile: false,
+  lastSelectionTap: null,
+  lastLockedTap: null,
   dragSelection: null,
   invalidSelection: false,
   invalidClearTimer: null,
@@ -39,7 +50,7 @@ const state = {
   completedAt: null,
   readingOrder: READING_ORDER.ROW,
   strictMode: false,
-  untimedMode: false,
+  timerMode: TIMER_MODE.TIMED,
   allowedWords: new Set(FALLBACK_WORDS),
   anagrams: buildAnagramMap(FALLBACK_WORDS),
   preferredAnagrams: buildAnagramMap(FALLBACK_WORDS),
@@ -58,7 +69,7 @@ const elements = {
   boardSizeInputs: document.querySelectorAll("input[name='board-size']"),
   readingOrderInputs: document.querySelectorAll("input[name='reading-order']"),
   strictModeInput: document.querySelector("#strict-mode"),
-  untimedModeInput: document.querySelector("#untimed-mode"),
+  timerModeInput: document.querySelector("#untimed-mode"),
   infoButton: document.querySelector("#info-button"),
   infoPanel: document.querySelector("#info-panel"),
   shareButton: document.querySelector("#share-button"),
@@ -69,6 +80,7 @@ const elements = {
   newButton: document.querySelector("#new-button")
 };
 
+configureBoardSizeControls();
 elements.settingsButton.addEventListener("click", toggleSettingsPanel);
 elements.boardSizeInputs.forEach((input) => {
   input.addEventListener("change", updateBoardSize);
@@ -77,7 +89,7 @@ elements.readingOrderInputs.forEach((input) => {
   input.addEventListener("change", updateReadingOrder);
 });
 elements.strictModeInput.addEventListener("change", updateStrictMode);
-elements.untimedModeInput.addEventListener("change", updateUntimedMode);
+elements.timerModeInput.addEventListener("change", updateTimerMode);
 elements.infoButton.addEventListener("click", toggleInfoPanel);
 elements.shareButton.addEventListener("click", copyPuzzleToClipboard);
 elements.restartButton.addEventListener("click", restartGame);
@@ -90,6 +102,16 @@ document.addEventListener("pointercancel", endDragSelection);
 
 startGame();
 
+function configureBoardSizeControls() {
+  elements.boardSizeInputs.forEach((input) => {
+    const size = parseSizeKey(input.value);
+    const isAvailable = size !== null;
+
+    input.disabled = !isAvailable;
+    input.closest("label").hidden = !isAvailable;
+  });
+}
+
 async function startGame() {
   await loadGameData();
   if (!loadPuzzleFromUrl() && !restoreStoredPuzzle()) {
@@ -99,8 +121,9 @@ async function startGame() {
 }
 
 async function loadGameData() {
-  const tilingRequests = BOARD_SIZES.map((size) =>
-    fetchText(`data/tetromino-tilings-${sizeKey(size.rows, size.cols)}.txt`)
+  const tilingSizes = canonicalBoardSizes();
+  const tilingRequests = tilingSizes.map((size) =>
+    fetchText(`data/tetromino-tilings-${canonicalSizeKey(size.rows, size.cols)}.txt`)
   );
   const [allowedText, commonText, ...tilingTexts] = await Promise.all([
     fetchText("data/allowed-words.txt"),
@@ -124,12 +147,30 @@ async function loadGameData() {
     const tilings = parseTilingText(text);
 
     if (tilings.length > 0) {
-      const { rows, cols } = BOARD_SIZES[index];
-      state.tilingsBySize[sizeKey(rows, cols)] = tilings;
+      const { rows, cols } = tilingSizes[index];
+      storeTilings(rows, cols, tilings);
     }
   });
 
   updateSettingsSummary();
+}
+
+function canonicalBoardSizes() {
+  return BOARD_SIZES
+    .filter((size) => size.rows <= size.cols)
+    .filter((size, index, sizes) => (
+      sizes.findIndex((other) => other.rows === size.rows && other.cols === size.cols) === index
+    ));
+}
+
+function storeTilings(rows, cols, tilings) {
+  state.tilingsBySize[sizeKey(rows, cols)] = tilings;
+
+  if (rows !== cols && isSupportedSize(cols, rows)) {
+    state.tilingsBySize[sizeKey(cols, rows)] = tilings.map((tiling) =>
+      transposeTiling(tiling, rows, cols)
+    );
+  }
 }
 
 async function fetchText(url) {
@@ -208,6 +249,18 @@ function compactTilingToPieces(tiling) {
   return pieces;
 }
 
+function transposeTiling(tiling, rows, cols) {
+  const transposed = Array.from({ length: tiling.length });
+
+  [...tiling].forEach((label, index) => {
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    transposed[col * rows + row] = label;
+  });
+
+  return transposed.join("");
+}
+
 function loadPuzzleFromUrl() {
   applyUrlSize();
   const letters = readUrlGrid();
@@ -251,7 +304,19 @@ function applyUrlSettings() {
     ? order
     : READING_ORDER.ROW;
   state.strictMode = parseUrlBoolean(params.get("strict"), false);
-  state.untimedMode = parseUrlBoolean(params.get("untimed"), false);
+  state.timerMode = readUrlTimerMode(params);
+}
+
+function readUrlTimerMode(params) {
+  if (params.has("timed")) {
+    return parseUrlBoolean(params.get("timed"), true)
+      ? TIMER_MODE.TIMED
+      : TIMER_MODE.UNTIMED;
+  }
+
+  return parseUrlBoolean(params.get("untimed"), false)
+    ? TIMER_MODE.UNTIMED
+    : TIMER_MODE.TIMED;
 }
 
 function parseUrlBoolean(value, fallback) {
@@ -285,6 +350,10 @@ function currentSizeKey() {
   return sizeKey(state.rows, state.cols);
 }
 
+function canonicalSizeKey(rows, cols) {
+  return rows <= cols ? sizeKey(rows, cols) : sizeKey(cols, rows);
+}
+
 function sizeKey(rows, cols) {
   return `${rows}x${cols}`;
 }
@@ -309,7 +378,8 @@ function makeGridUrl() {
   url.searchParams.set("grid", grid);
   url.searchParams.set("order", state.readingOrder);
   url.searchParams.set("strict", state.strictMode ? "1" : "0");
-  url.searchParams.set("untimed", state.untimedMode ? "1" : "0");
+  url.searchParams.set("timed", isTimedMode() ? "1" : "0");
+  url.searchParams.delete("untimed");
   url.searchParams.delete("sol");
 
   if (state.solution.length > 0 && isValidSolution(state.solution)) {
@@ -493,7 +563,7 @@ function restoreStoredPuzzle() {
 
     state.readingOrder = stored.readingOrder;
     state.strictMode = stored.strictMode;
-    state.untimedMode = stored.untimedMode || false;
+    state.timerMode = stored.timerMode || (stored.untimedMode ? TIMER_MODE.UNTIMED : TIMER_MODE.TIMED);
     setBoardDimensions(stored.rows || DEFAULT_SIZE.rows, stored.cols || DEFAULT_SIZE.cols);
     state.board = makeBoardFromLetters(stored.letters);
     state.solution = stored.solution;
@@ -516,7 +586,7 @@ function saveCurrentPuzzle() {
         solution: state.solution,
         readingOrder: state.readingOrder,
         strictMode: state.strictMode,
-        untimedMode: state.untimedMode,
+        timerMode: state.timerMode,
         rows: state.rows,
         cols: state.cols,
         startedAt: state.startedAt
@@ -536,6 +606,7 @@ function isStoredPuzzle(stored) {
     stored.letters.split("").every((letter) => /^[A-Z]$/.test(letter)) &&
     Object.values(READING_ORDER).includes(stored.readingOrder) &&
     typeof stored.strictMode === "boolean" &&
+    (stored.timerMode === undefined || Object.values(TIMER_MODE).includes(stored.timerMode)) &&
     (stored.untimedMode === undefined || typeof stored.untimedMode === "boolean") &&
     Array.isArray(stored.solution) &&
     (stored.startedAt === undefined || Number.isFinite(stored.startedAt))
@@ -557,6 +628,8 @@ function resetProgress({ resetTimer = true } = {}) {
   state.moves = [];
   state.activeMoveIndex = null;
   state.clickStartedOnSelectedTile = false;
+  state.lastSelectionTap = null;
+  state.lastLockedTap = null;
   state.dragSelection = null;
   state.invalidSelection = false;
   state.cheatIndex = 0;
@@ -628,6 +701,16 @@ function startDragSelection(cell, event) {
     return;
   }
 
+  if (event.pointerType !== "mouse" && state.selection.includes(cell.id)) {
+    handleSelectedTileTap(cell, event);
+    return;
+  }
+
+  if (event.pointerType !== "mouse" && state.locked.has(cell.id)) {
+    handleLockedTileTap(cell, event);
+    return;
+  }
+
   if (state.locked.has(cell.id) || state.selection.includes(cell.id)) {
     return;
   }
@@ -640,6 +723,55 @@ function startDragSelection(cell, event) {
   event.preventDefault();
   event.currentTarget.setPointerCapture(event.pointerId);
   addCellToSelection(cell);
+}
+
+function handleSelectedTileTap(cell, event) {
+  const now = Date.now();
+  const isDoubleTap = (
+    state.lastSelectionTap?.cellId === cell.id &&
+    now - state.lastSelectionTap.time <= DOUBLE_TAP_MS
+  );
+
+  event.preventDefault();
+  state.dragSelection = null;
+
+  if (isDoubleTap) {
+    state.lastSelectionTap = null;
+    deselectSelectedCell(cell);
+    return;
+  }
+
+  state.lastSelectionTap = {
+    cellId: cell.id,
+    time: now
+  };
+}
+
+function handleLockedTileTap(cell, event) {
+  const now = Date.now();
+  const lockedMoveIndex = state.locked.get(cell.id);
+  const isDoubleTap = (
+    state.lastLockedTap?.cellId === cell.id &&
+    now - state.lastLockedTap.time <= DOUBLE_TAP_MS
+  );
+
+  event.preventDefault();
+  state.dragSelection = null;
+
+  if (lockedMoveIndex === undefined) {
+    return;
+  }
+
+  if (isDoubleTap) {
+    state.lastLockedTap = null;
+    deleteMove(lockedMoveIndex);
+    return;
+  }
+
+  state.lastLockedTap = {
+    cellId: cell.id,
+    time: now
+  };
 }
 
 function handleDragMove(event) {
@@ -699,6 +831,10 @@ function getTileClassName(cell, lockedMoveIndex) {
 function boardMaxWidth() {
   if (state.rows <= state.cols) {
     return 400;
+  }
+
+  if (window.matchMedia("(max-width: 430px)").matches) {
+    return Math.round(360 * Math.sqrt(state.cols / state.rows));
   }
 
   return Math.round(400 * Math.sqrt(state.cols / state.rows));
@@ -787,8 +923,10 @@ function addCellToSelection(cell) {
 }
 
 function handleTileDoubleClick(cell) {
-  if (state.locked.has(cell.id)) {
-    activateCompletedGroupWithoutCell(cell.id);
+  const lockedMoveIndex = state.locked.get(cell.id);
+
+  if (lockedMoveIndex !== undefined) {
+    deleteMove(lockedMoveIndex);
     return;
   }
 
@@ -800,6 +938,10 @@ function deselectCellOnDoubleClick(cell) {
     return;
   }
 
+  deselectSelectedCell(cell);
+}
+
+function deselectSelectedCell(cell) {
   const existingIndex = state.selection.indexOf(cell.id);
 
   if (existingIndex < 0) {
@@ -808,6 +950,8 @@ function deselectCellOnDoubleClick(cell) {
 
   state.selection.splice(existingIndex, 1);
   state.clickStartedOnSelectedTile = false;
+  state.lastSelectionTap = null;
+  state.lastLockedTap = null;
   render();
 }
 
@@ -1091,6 +1235,7 @@ function deleteMove(index) {
   state.activeMoveIndex = null;
   state.dragSelection = null;
   state.invalidSelection = false;
+  state.lastLockedTap = null;
   state.completedAt = null;
   state.solvedWithHelp = false;
   clearInvalidTimer();
@@ -1126,26 +1271,6 @@ function clearInvalidTimer() {
   state.invalidClearTimer = null;
 }
 
-function activateCompletedGroupWithoutCell(cellId) {
-  const moveIndex = state.locked.get(cellId);
-  const move = state.moves[moveIndex];
-
-  if (!move) {
-    return;
-  }
-
-  state.moves.splice(moveIndex, 1);
-  state.selection = move.cells.filter((id) => id !== cellId);
-  state.activeMoveIndex = null;
-  state.dragSelection = null;
-  state.invalidSelection = false;
-  state.completedAt = null;
-  state.solvedWithHelp = false;
-  clearInvalidTimer();
-  rebuildLockedMap();
-  render();
-}
-
 function startNewGame() {
   generatePuzzle();
   updateAddressBar();
@@ -1168,8 +1293,8 @@ function updateStrictMode(event) {
   setStrictMode(event.target.checked);
 }
 
-function updateUntimedMode(event) {
-  setUntimedMode(event.target.checked);
+function updateTimerMode(event) {
+  setTimerMode(event.target.checked ? TIMER_MODE.UNTIMED : TIMER_MODE.TIMED);
 }
 
 function setReadingOrder(readingOrder) {
@@ -1227,14 +1352,14 @@ function setStrictMode(enabled) {
   render();
 }
 
-function setUntimedMode(enabled) {
-  if (state.untimedMode === enabled) {
+function setTimerMode(timerMode) {
+  if (!Object.values(TIMER_MODE).includes(timerMode) || state.timerMode === timerMode) {
     return;
   }
 
-  const shouldRefresh = !enabled || isPuzzleComplete();
+  const shouldRefresh = timerMode === TIMER_MODE.TIMED || isPuzzleComplete();
 
-  state.untimedMode = enabled;
+  state.timerMode = timerMode;
   syncSettingsControls();
   closeSettingsPanel();
 
@@ -1248,6 +1373,10 @@ function setUntimedMode(enabled) {
   saveCurrentPuzzle();
   updateAddressBar();
   render();
+}
+
+function isTimedMode() {
+  return state.timerMode === TIMER_MODE.TIMED;
 }
 
 function hasChosenTiles() {
@@ -1266,7 +1395,7 @@ function updateSettingsSummary() {
     currentSizeKey(),
     labels[state.readingOrder],
     state.strictMode ? "Strict" : null,
-    state.untimedMode ? "Untimed" : null
+    isTimedMode() ? null : "Untimed"
   ].filter(Boolean).join(" | ");
 }
 
@@ -1278,7 +1407,7 @@ function syncSettingsControls() {
     input.checked = input.value === state.readingOrder;
   });
   elements.strictModeInput.checked = state.strictMode;
-  elements.untimedModeInput.checked = state.untimedMode;
+  elements.timerModeInput.checked = !isTimedMode();
   updateSettingsSummary();
 }
 
@@ -1535,7 +1664,7 @@ function renderCompletionMessage() {
   elements.completionMessage.innerHTML = "";
   elements.completionMessage.classList.toggle("is-complete", isPuzzleComplete());
 
-  if (!isPuzzleComplete() || state.untimedMode) {
+  if (!isPuzzleComplete() || !isTimedMode()) {
     return;
   }
 

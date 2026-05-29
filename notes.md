@@ -23,14 +23,15 @@ and larger boards.
 ## Current Tiling Files
 
 The compact files `data/tetromino-tilings-*.txt` contain generated tetromino
-tilings for the supported board sizes:
+tilings for the standard stored board sizes:
 
 - `4x4`
 - `4x5`
-- `5x4`
 - `4x6`
-- `6x4`
 - `6x6`
+
+Rectangular boards are stored with `rows <= cols`; the app transposes `4x5`
+tilings for `5x4`, and `4x6` tilings for `6x4`.
 
 The generated files assume:
 

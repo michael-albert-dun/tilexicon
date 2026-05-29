@@ -722,7 +722,7 @@ h1 {
 
 .completion-label {
   color: var(--muted);
-  font-size: clamp(2rem, 7vw, 3.25rem);
+  font-size: clamp(1.5rem, 5.25vw, 2.45rem);
   font-weight: 380;
   line-height: 0.96;
 }
@@ -785,15 +785,37 @@ h1 {
 
 @media (max-width: 430px) {
   .app {
-    padding: 16px;
+    padding: 10px;
+    place-items: start center;
+  }
+
+  .play-area {
+    padding: 14px;
+    border-radius: 22px;
   }
 
   .masthead {
-    text-align: left;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 10vw, 2.7rem);
   }
 
   .board {
     gap: 4px;
+  }
+
+  .selection-lines {
+    margin-top: 8px;
+  }
+
+  .toolbar {
+    margin-top: 8px;
+  }
+
+  .toolbar button {
+    min-height: 40px;
   }
 
   .mini-tile {

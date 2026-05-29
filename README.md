@@ -35,9 +35,7 @@ Tiles can be selected by clicking/tapping or by dragging across the board.
 
 - Backspace removes the last tile from an in-progress selection.
 - Backspace on an active completed word removes that word.
-- Double-clicking a completed word removes the full word.
-- Double-clicking a completed group on the main grid unlocks that group and
-  makes it active.
+- Double-clicking any tile in a completed word removes the full word.
 
 Keyboard shortcuts:
 
@@ -63,7 +61,7 @@ Supported URL parameters:
 - `grid=<letters>`
 - `order=row|column|both|any`
 - `strict=1`
-- `untimed=1`
+- `timed=0|1`
 - `sol=<encoded-solution>`
 
 A grid-only link defaults to 4 x 4, left-to-right reading, ordinary mode, and
@@ -86,6 +84,16 @@ Then open:
 http://localhost:8000
 ```
 
+## Configuration
+
+Static builds can disable the 6 x 6 board by editing `src/config.js`:
+
+```js
+window.TilexiconConfig = {
+  enable6x6: false
+};
+```
+
 ## Data Files
 
 The allowed-word list lives in `data/allowed-words.txt`. Random puzzle
@@ -100,7 +108,8 @@ scripts/generate-word-list.sh
 Compact tetromino tiling files live in `data/tetromino-tilings-*.txt`. Each
 line is a row-major tiling string. The characters `0` to `k - 1` identify the
 tetromino covering each cell, with labels assigned in first-uncovered-cell
-order.
+order. Rectangular tiling files are stored with `rows <= cols`; portrait boards
+use transposed copies in memory.
 
 Regenerate the tiling files with:
 
