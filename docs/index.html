@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tilexicon</title>
+  <link rel="stylesheet" href="styles.css?v=20260530f">
+  <script src="src/config.js?v=20260530f" defer></script>
+  <script src="src/game.js?v=20260530f" defer></script>
+</head>
+
+<body>
+  <main class="app">
+    <section class="play-area" aria-labelledby="title">
+      <button id="settings-button" class="corner-button settings-button" type="button" aria-expanded="false"
+        aria-controls="settings-panel" aria-label="Settings">
+        <span></span>
+        <span></span>
+        <span></span>
+        <output id="settings-summary" class="settings-summary" aria-hidden="true"></output>
+      </button>
+      <button id="info-button" class="info-button" type="button" aria-expanded="false" aria-controls="info-panel"
+        aria-label="How to play">i</button>
+      <button id="share-button" class="corner-button share-button" type="button"
+        aria-label="Copy puzzle with solution" title="Copy puzzle with solution">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <aside id="settings-panel" class="settings-panel" hidden>
+        <fieldset>
+          <legend>Board</legend>
+          <label>
+            <input type="radio" name="board-size" value="4x4" checked>
+            4 x 4
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="4x5">
+            4 x 5
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="5x4">
+            5 x 4
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="4x6">
+            4 x 6
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="6x4">
+            6 x 4
+          </label>
+          <label>
+            <input type="radio" name="board-size" value="6x6">
+            6 x 6
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Reading Order</legend>
+          <label>
+            <input type="radio" name="reading-order" value="row" checked>
+            Left-to-right, top-to-bottom
+          </label>
+          <label>
+            <input type="radio" name="reading-order" value="column">
+            Top-to-bottom, left-to-right
+          </label>
+          <label>
+            <input type="radio" name="reading-order" value="both">
+            Either order
+          </label>
+          <label>
+            <input type="radio" name="reading-order" value="any">
+            Any anagram
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Selection</legend>
+          <label>
+            <input id="strict-mode" type="checkbox">
+            Strict mode
+          </label>
+          <label>
+            <input id="untimed-mode" type="checkbox">
+            Untimed mode
+          </label>
+        </fieldset>
+      </aside>
+
+      <aside id="info-panel" class="info-panel" hidden>
+        <h2>How to play</h2>
+
+        <ul class="rules-list">
+          <li>Cover the board with four-letter words.</li>
+          <li>Each word uses exactly four tiles.</li>
+          <li>Tiles must touch along their edges.</li>
+          <li>Read left-to-right, top-to-bottom.</li>
+          <li>Sorry, you can't restart the clock.</li>
+        </ul>
+
+        <div class="example-columns" aria-label="Examples">
+          <div>
+            <span>valid</span>
+            <div class="example-grid is-valid" aria-label="Valid straight word">
+              <b style="grid-area: 1 / 1">W</b>
+              <b style="grid-area: 1 / 2">O</b>
+              <b style="grid-area: 1 / 3">R</b>
+              <b style="grid-area: 1 / 4">D</b>
+            </div>
+            <div class="example-grid is-valid" aria-label="Valid bent word">
+              <b style="grid-area: 1 / 1">W</b>
+              <b style="grid-area: 1 / 2">O</b>
+              <b style="grid-area: 2 / 2">R</b>
+              <b style="grid-area: 3 / 2">D</b>
+            </div>
+          </div>
+          <div>
+            <span>invalid</span>
+            <div class="example-grid is-invalid-example" aria-label="Invalid disconnected word">
+              <b style="grid-area: 1 / 1">W</b>
+              <b style="grid-area: 1 / 3">O</b>
+              <b style="grid-area: 2 / 2">R</b>
+              <b style="grid-area: 3 / 3">D</b>
+            </div>
+            <div class="example-grid is-invalid-example" aria-label="Invalid reading order">
+              <b style="grid-area: 2 / 1">W</b>
+              <b style="grid-area: 2 / 2">O</b>
+              <b style="grid-area: 2 / 3">D</b>
+              <b style="grid-area: 3 / 2">R</b>
+            </div>
+          </div>
+        </div>
+
+        <section class="settings-note" aria-label="Settings notes">
+          <h2>Settings</h2>
+          <ul class="rules-list rules-list-secondary">
+            <li>Other reading modes.</li>
+            <li>Strict mode: tiles must be chosen in order.</li>
+            <li>Untimed mode: if you just want to chill.</li>
+            <li>Press ? for keyboard shortcuts.</li>
+          </ul>
+        </section>
+      </aside>
+
+      <aside id="keyboard-panel" class="keyboard-panel" aria-label="Keyboard shortcuts" hidden>
+        <h2>Keyboard shortcuts</h2>
+        <dl class="shortcut-list">
+          <div>
+            <dt>?</dt>
+            <dd>This panel</dd>
+          </div>
+          <div>
+            <dt>I</dt>
+            <dd>Info</dd>
+          </div>
+          <div>
+            <dt>R</dt>
+            <dd>Restart</dd>
+          </div>
+          <div>
+            <dt>N</dt>
+            <dd>New</dd>
+          </div>
+          <div>
+            <dt>P</dt>
+            <dd>Print grid</dd>
+          </div>
+          <div>
+            <dt>S</dt>
+            <dd>Strict</dd>
+          </div>
+          <div>
+            <dt>O</dt>
+            <dd>Ordinary</dd>
+          </div>
+          <div>
+            <dt>L</dt>
+            <dd>LR-TB</dd>
+          </div>
+          <div>
+            <dt>T</dt>
+            <dd>TB-LR</dd>
+          </div>
+          <div>
+            <dt>E</dt>
+            <dd>Either</dd>
+          </div>
+          <div>
+            <dt>A</dt>
+            <dd>Anagram</dd>
+          </div>
+        </dl>
+      </aside>
+
+      <aside id="print-panel" class="print-panel" aria-label="Printable grid" hidden>
+        <h2>Print grid</h2>
+        <input id="print-grid" class="print-grid" type="text" readonly>
+      </aside>
+
+      <div class="masthead">
+        <div>
+          <h1 id="title" class="title-hint" tabindex="0" data-hint="Tile the board with four-letter tetromino words.">
+            Tilexicon</h1>
+        </div>
+      </div>
+
+      <div id="board" class="board" aria-label="Tilexicon board"></div>
+
+      <div id="selection-lines" class="selection-lines" aria-label="Selections"></div>
+
+      <div id="completion-message" class="completion-message" aria-live="polite"></div>
+
+      <div class="toolbar" aria-label="Game controls">
+        <button id="restart-button" type="button">Restart</button>
+        <button id="new-button" type="button">New</button>
+      </div>
+    </section>
+  </main>
+</body>
+
+</html>
