@@ -1,8 +1,8 @@
-# Wordomino Notes
+# Tilexicon Notes
 
 ## Tetromino Tiling References
 
-The 4x4 board is small enough that Wordomino can keep a generated list of all
+The 4x4 board is small enough that Tilexicon can keep a generated list of all
 starter tilings, but these references are useful background for later rulesets
 and larger boards.
 

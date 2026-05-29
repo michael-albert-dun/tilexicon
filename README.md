@@ -1,6 +1,6 @@
-# Wordomino
+# Tilexicon
 
-Wordomino is a browser-based word puzzle played on a rectangular grid of
+Tilexicon is a browser-based word puzzle played on a rectangular grid of
 letter tiles. The player covers the board with four-letter words, each made
 from four edge-connected tiles in a tetromino shape.
 
@@ -22,7 +22,7 @@ be changed from the settings menu.
 
 ## Settings
 
-- Wordomino supports all board sizes from 4 x 4 to 6 x 6 that can be tiled with
+- Tilexicon supports all board sizes from 4 x 4 to 6 x 6 that can be tiled with
   tetrominoes.
 - Reading modes are left-to-right, top-to-bottom; top-to-bottom, left-to-right;
   either of those orders; or any anagram.

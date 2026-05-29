@@ -1,6 +1,6 @@
 const WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
-const SESSION_STORAGE_KEY = "wordomino.currentPuzzle";
+const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
 const CHEAT_CODE = ["q", "q", "q"];
 const BOARD_SIZES = [
   { rows: 4, cols: 4, label: "4 x 4" },
@@ -1148,6 +1148,7 @@ function activateCompletedGroupWithoutCell(cellId) {
 
 function startNewGame() {
   generatePuzzle();
+  updateAddressBar();
   render();
 }
 
@@ -1188,6 +1189,7 @@ function setReadingOrder(readingOrder) {
     saveCurrentPuzzle();
   }
 
+  updateAddressBar();
   render();
 }
 
@@ -1200,6 +1202,7 @@ function setBoardSize(rows, cols) {
   syncSettingsControls();
   closeSettingsPanel();
   generatePuzzle();
+  updateAddressBar();
   render();
 }
 
@@ -1214,11 +1217,13 @@ function setStrictMode(enabled) {
 
   if (enabled && hasChosenTiles()) {
     generatePuzzle();
+    updateAddressBar();
     render();
     return;
   }
 
   saveCurrentPuzzle();
+  updateAddressBar();
   render();
 }
 
@@ -1235,11 +1240,13 @@ function setUntimedMode(enabled) {
 
   if (shouldRefresh) {
     generatePuzzle();
+    updateAddressBar();
     render();
     return;
   }
 
   saveCurrentPuzzle();
+  updateAddressBar();
   render();
 }
 
@@ -1346,6 +1353,10 @@ async function copyPuzzleToClipboard() {
   } catch {
     showPrintPanel();
   }
+}
+
+function updateAddressBar() {
+  window.history.replaceState(null, "", makeGridUrl());
 }
 
 function closePanelsFromOutside(event) {

@@ -1,6 +1,6 @@
 # Mobile Todo
 
-Wordomino is currently being tuned around desktop play. These mobile-specific
+Tilexicon is currently being tuned around desktop play. These mobile-specific
 interaction questions are worth revisiting before treating the interface as
 portable.
 
