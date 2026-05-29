@@ -460,7 +460,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(4, minmax(58px, 1fr));
   gap: 5px;
-  width: min(100%, 400px);
+  width: min(100%, var(--board-max-width, 400px));
   aspect-ratio: 1;
   margin: 0 auto;
 }
@@ -640,6 +640,10 @@ h1 {
 
 .selection-lines.is-complete-large {
   width: min(100%, 330px);
+}
+
+.selection-lines.is-complete-medium {
+  width: min(100%, 190px);
 }
 
 .selection-lines.is-complete .selection-row {

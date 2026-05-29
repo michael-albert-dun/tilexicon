@@ -590,6 +590,7 @@ function render() {
   elements.board.innerHTML = "";
   elements.board.style.gridTemplateColumns = `repeat(${state.cols}, minmax(0, 1fr))`;
   elements.board.style.aspectRatio = `${state.cols} / ${state.rows}`;
+  elements.board.style.setProperty("--board-max-width", `${boardMaxWidth()}px`);
   elements.board.style.setProperty("--tile-font-size", `${tileFontSize()}rem`);
   elements.board.style.setProperty("--tile-radius", `${tileRadius()}px`);
   elements.board.style.setProperty("--tile-inset", `${tileInset()}px`);
@@ -695,6 +696,14 @@ function getTileClassName(cell, lockedMoveIndex) {
   return classes.join(" ");
 }
 
+function boardMaxWidth() {
+  if (state.rows <= state.cols) {
+    return 400;
+  }
+
+  return Math.round(400 * Math.sqrt(state.cols / state.rows));
+}
+
 function tileFontSize() {
   return Math.max(1.25, Math.min(3.1, 11 / state.cols));
 }
@@ -731,7 +740,7 @@ function inProgressSelectionSpace() {
     return rows * 28 + (rows - 1) * 5;
   }
 
-  return count * 36 + (count - 1) * 3;
+  return count * 40 + (count - 1) * 3;
 }
 
 function completedSelectionSpace() {
@@ -991,6 +1000,7 @@ function readCells(cells, readingOrder) {
 function renderSelectionLines() {
   elements.selectionLines.innerHTML = "";
   elements.selectionLines.classList.toggle("is-complete", isPuzzleComplete());
+  elements.selectionLines.classList.toggle("is-complete-medium", isPuzzleComplete() && pieceCount() === 6);
   elements.selectionLines.classList.toggle("is-complete-large", isPuzzleComplete() && pieceCount() >= 9);
   elements.selectionLines.classList.toggle("is-in-progress-large", !isPuzzleComplete() && pieceCount() >= 6);
 
