@@ -776,6 +776,11 @@ h1 {
   margin: 12px auto 0;
 }
 
+.toolbar.is-intro {
+  grid-template-columns: minmax(140px, 1fr);
+  width: min(100%, 190px);
+}
+
 .completion-message {
   display: flex;
   flex-direction: column;
@@ -819,6 +824,11 @@ h1 {
   font-weight: 560;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(45, 62, 76, 0.06);
+}
+
+.toolbar.is-intro button {
+  min-height: 52px;
+  font-size: 1.06rem;
 }
 
 .toolbar button:hover:not(:disabled) {

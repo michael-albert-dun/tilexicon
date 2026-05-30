@@ -743,6 +743,14 @@ function render() {
   });
 
   renderSelectionLines();
+  renderToolbar();
+}
+
+function renderToolbar() {
+  elements.restartButton.hidden = state.isIntro;
+  elements.newButton.textContent = state.isIntro ? "Start" : "New";
+  elements.newButton.setAttribute("aria-label", state.isIntro ? "Start game" : "New puzzle");
+  elements.newButton.closest(".toolbar").classList.toggle("is-intro", state.isIntro);
 }
 
 function startDragSelection(cell, event) {
