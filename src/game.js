@@ -4,7 +4,7 @@ const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
 const CHEAT_CODE = ["q", "q", "q"];
 const DOUBLE_TAP_MS = 320;
 const INTRO_PHRASES = [
-  ["form", "each", "word", "here"],
+  ["find", "each", "word", "here"],
   ["each", "tile", "must", "link"]
 ];
 const CONFIG = window.TilexiconConfig || {};
