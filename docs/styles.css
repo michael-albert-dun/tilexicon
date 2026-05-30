@@ -527,25 +527,70 @@ h1 {
 }
 
 .tile.is-delete-anchor::before {
-  content: "x";
+  content: "\00d7";
   position: absolute;
   top: 0;
   left: 0;
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(41, 52, 61, 0.32);
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--delete-border, rgba(41, 52, 61, 0.44));
   border-radius: calc(var(--tile-radius, 20px) * 0.42);
-  background: rgba(251, 253, 255, 0.9);
+  background: var(--delete-bg, rgba(251, 253, 255, 0.94));
   color: var(--ink);
-  font-size: 1rem;
-  font-weight: 560;
+  font-size: 1.35rem;
+  font-weight: 680;
   line-height: 1;
-  box-shadow: 0 5px 12px rgba(45, 62, 76, 0.12);
+  box-shadow: 0 5px 12px rgba(45, 62, 76, 0.16);
   pointer-events: auto;
   transform: translate(-50%, -50%);
+}
+
+.tile.lock-group-0 {
+  --delete-bg: color-mix(in srgb, var(--locked-a) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-a) 70%, #29343d);
+}
+
+.tile.lock-group-1 {
+  --delete-bg: color-mix(in srgb, var(--locked-b) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-b) 70%, #29343d);
+}
+
+.tile.lock-group-2 {
+  --delete-bg: color-mix(in srgb, var(--locked-c) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-c) 70%, #29343d);
+}
+
+.tile.lock-group-3 {
+  --delete-bg: color-mix(in srgb, var(--locked-d) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-d) 70%, #29343d);
+}
+
+.tile.lock-group-4 {
+  --delete-bg: color-mix(in srgb, var(--locked-e) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-e) 70%, #29343d);
+}
+
+.tile.lock-group-5 {
+  --delete-bg: color-mix(in srgb, var(--locked-f) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-f) 70%, #29343d);
+}
+
+.tile.lock-group-6 {
+  --delete-bg: color-mix(in srgb, var(--locked-g) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-g) 70%, #29343d);
+}
+
+.tile.lock-group-7 {
+  --delete-bg: color-mix(in srgb, var(--locked-h) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-h) 70%, #29343d);
+}
+
+.tile.lock-group-8 {
+  --delete-bg: color-mix(in srgb, var(--locked-i) 34%, white);
+  --delete-border: color-mix(in srgb, var(--locked-i) 70%, #29343d);
 }
 
 .tile.lock-group-0,
