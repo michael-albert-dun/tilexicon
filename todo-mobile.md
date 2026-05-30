@@ -10,8 +10,8 @@ portable.
   unavailable. This is fine while the hint is nonessential; onboarding or help
   should carry any important explanation later.
 - Double-click gestures: double-tap can conflict with browser zoom, tap delay,
-  or platform expectations. Double-tapping a selected tile or completed word
-  needs real device testing.
+  or platform expectations. The visible `x` affordance for completed words
+  should be the primary mobile delete path.
 - Backspace dependency: mobile keyboards are usually not open during board play,
   so Backspace should not be the only path for any important action.
 - Drag-select: `touch-action: none` should help, but fingers may obscure tiles
@@ -25,7 +25,8 @@ portable.
 
 - Keep drag-to-select as the primary fast interaction.
 - Replace reliance on double-click and Backspace with touch-friendly row actions.
-- Consider tapping a completed mini-row to show a small delete affordance.
+- Test whether the completed-word `x` affordance is large and clear enough on
+  phone screens.
 - Move explanatory details into an onboarding/help mode rather than the main
   play surface.
 

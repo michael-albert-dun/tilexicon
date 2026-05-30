@@ -35,7 +35,8 @@ Tiles can be selected by clicking/tapping or by dragging across the board.
 
 - Backspace removes the last tile from an in-progress selection.
 - Backspace on an active completed word removes that word.
-- Double-clicking any tile in a completed word removes the full word.
+- Tapping a completed word makes it active and shows an `x`; tapping the `x`
+  removes the full word.
 
 Keyboard shortcuts:
 

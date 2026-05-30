@@ -679,7 +679,7 @@ function render() {
     button.className = getTileClassName(cell, lockedMoveIndex);
     button.textContent = cell.letter;
     button.dataset.id = cell.id;
-    button.setAttribute("aria-label", `${cell.letter} at row ${cell.row + 1}, column ${cell.col + 1}`);
+    button.setAttribute("aria-label", getTileAriaLabel(cell, lockedMoveIndex));
     button.setAttribute("aria-disabled", String(lockedMoveIndex !== undefined));
     button.addEventListener("pointerdown", (event) => startDragSelection(cell, event));
     button.addEventListener("pointerenter", () => extendDragSelection(cell));
@@ -764,16 +764,19 @@ function handleLockedTileTap(cell, event) {
     return;
   }
 
-  if (isDoubleTap) {
+  if (isDoubleTap || isDeleteAnchorCell(cell, lockedMoveIndex)) {
     state.lastLockedTap = null;
     deleteMove(lockedMoveIndex);
     return;
   }
 
+  state.selection = [];
+  state.activeMoveIndex = lockedMoveIndex;
   state.lastLockedTap = {
     cellId: cell.id,
     time: now
   };
+  render();
 }
 
 function handleDragMove(event) {
@@ -825,9 +828,34 @@ function getTileClassName(cell, lockedMoveIndex) {
 
   if (lockedMoveIndex !== undefined) {
     classes.push("is-locked", lockGroupClass(lockedMoveIndex));
+
+    if (state.activeMoveIndex === lockedMoveIndex) {
+      classes.push("is-active-group");
+    }
+
+    if (isDeleteAnchorCell(cell, lockedMoveIndex)) {
+      classes.push("is-delete-anchor");
+    }
   }
 
   return classes.join(" ");
+}
+
+function getTileAriaLabel(cell, lockedMoveIndex) {
+  const position = `${cell.letter} at row ${cell.row + 1}, column ${cell.col + 1}`;
+
+  if (lockedMoveIndex === undefined) {
+    return position;
+  }
+
+  const move = state.moves[lockedMoveIndex];
+  const word = move ? move.word.toUpperCase() : "completed word";
+
+  if (isDeleteAnchorCell(cell, lockedMoveIndex)) {
+    return `${position}. Remove ${word}.`;
+  }
+
+  return `${position}. Select completed word ${word}.`;
 }
 
 function boardMaxWidth() {
@@ -895,11 +923,26 @@ function selectCell(cell) {
     return;
   }
 
-  if (state.locked.has(cell.id)) {
+  const lockedMoveIndex = state.locked.get(cell.id);
+
+  if (lockedMoveIndex !== undefined) {
+    handleLockedTileClick(cell, lockedMoveIndex);
     return;
   }
 
   addCellToSelection(cell);
+}
+
+function handleLockedTileClick(cell, lockedMoveIndex) {
+  if (state.activeMoveIndex === lockedMoveIndex && isDeleteAnchorCell(cell, lockedMoveIndex)) {
+    deleteMove(lockedMoveIndex);
+    return;
+  }
+
+  state.selection = [];
+  state.activeMoveIndex = lockedMoveIndex;
+  state.lastLockedTap = null;
+  render();
 }
 
 function addCellToSelection(cell) {
@@ -933,6 +976,22 @@ function handleTileDoubleClick(cell) {
   }
 
   deselectCellOnDoubleClick(cell);
+}
+
+function isDeleteAnchorCell(cell, moveIndex) {
+  return state.activeMoveIndex === moveIndex && cell.id === deleteAnchorCellId(moveIndex);
+}
+
+function deleteAnchorCellId(moveIndex) {
+  const move = state.moves[moveIndex];
+
+  if (!move) {
+    return null;
+  }
+
+  return move.cells
+    .map(getCellById)
+    .sort(compareCells)[0]?.id || null;
 }
 
 function deselectCellOnDoubleClick(cell) {
@@ -1513,6 +1572,16 @@ function closePanelsFromOutside(event) {
 
   if (!elements.printPanel.hidden && !elements.printPanel.contains(event.target)) {
     closePrintPanel();
+  }
+
+  if (
+    state.activeMoveIndex !== null &&
+    !event.target.closest(".tile") &&
+    !event.target.closest(".selection-row")
+  ) {
+    state.activeMoveIndex = null;
+    state.lastLockedTap = null;
+    render();
   }
 }
 

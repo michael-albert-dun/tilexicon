@@ -512,6 +512,11 @@ h1 {
   border-color: rgba(0, 0, 0, 0.22);
 }
 
+.tile.is-active-group {
+  border-color: #29404f;
+  box-shadow: 0 14px 30px rgba(45, 62, 76, 0.16);
+}
+
 .tile.is-locked::after {
   content: "";
   position: absolute;
@@ -519,6 +524,28 @@ h1 {
   border: 2px solid rgba(255, 255, 255, 0.42);
   border-radius: calc(var(--tile-radius, 20px) - 6px);
   pointer-events: none;
+}
+
+.tile.is-delete-anchor::before {
+  content: "x";
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(41, 52, 61, 0.32);
+  border-radius: calc(var(--tile-radius, 20px) * 0.42);
+  background: rgba(251, 253, 255, 0.9);
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 560;
+  line-height: 1;
+  box-shadow: 0 5px 12px rgba(45, 62, 76, 0.12);
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
 }
 
 .tile.lock-group-0,
