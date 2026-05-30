@@ -102,8 +102,16 @@ Build a GitHub Pages copy in `docs/` with:
 scripts/build-pages.sh
 ```
 
-The Pages build disables 6 x 6 and omits `data/tetromino-tilings-6x6.txt`.
-On GitHub, set Pages to deploy from the `main` branch and the `/docs` folder.
+The default Pages build disables 6 x 6 and omits
+`data/tetromino-tilings-6x6.txt`. To deploy a static build where 6 x 6 is
+hidden by default but available by URL opt-in, run:
+
+```sh
+scripts/build-pages.sh --include-6x6
+```
+
+Then visit with `?enable6x6=1` to reveal and load 6 x 6. On GitHub, set Pages
+to deploy from the `main` branch and the `/docs` folder.
 
 ## Data Files
 

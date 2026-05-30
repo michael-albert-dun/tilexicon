@@ -4,6 +4,8 @@ const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
 const CHEAT_CODE = ["q", "q", "q"];
 const DOUBLE_TAP_MS = 320;
 const CONFIG = window.TilexiconConfig || {};
+const URL_FLAGS = new URLSearchParams(window.location.search);
+const ENABLE_6X6 = CONFIG.enable6x6 !== false || parseUrlBoolean(URL_FLAGS.get("enable6x6"), false);
 const ALL_BOARD_SIZES = [
   { rows: 4, cols: 4, label: "4 x 4" },
   { rows: 4, cols: 5, label: "4 x 5" },
@@ -13,7 +15,7 @@ const ALL_BOARD_SIZES = [
   { rows: 6, cols: 6, label: "6 x 6" }
 ];
 const BOARD_SIZES = ALL_BOARD_SIZES.filter((size) => (
-  CONFIG.enable6x6 !== false || sizeKey(size.rows, size.cols) !== "6x6"
+  ENABLE_6X6 || sizeKey(size.rows, size.cols) !== "6x6"
 ));
 const DEFAULT_SIZE = BOARD_SIZES[0];
 const FALLBACK_TILINGS = {

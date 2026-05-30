@@ -2,7 +2,19 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUTPUT_DIR="${1:-"$ROOT_DIR/docs"}"
+INCLUDE_6X6=false
+OUTPUT_DIR="$ROOT_DIR/docs"
+
+for arg in "$@"; do
+  case "$arg" in
+    --include-6x6)
+      INCLUDE_6X6=true
+      ;;
+    *)
+      OUTPUT_DIR="$arg"
+      ;;
+  esac
+done
 
 if [[ "$OUTPUT_DIR" == "$ROOT_DIR" || "$OUTPUT_DIR" == "/" ]]; then
   echo "Refusing to overwrite unsafe output directory: $OUTPUT_DIR" >&2
@@ -30,5 +42,13 @@ cp "$ROOT_DIR/data/tetromino-tilings-4x4.txt" "$OUTPUT_DIR/data/"
 cp "$ROOT_DIR/data/tetromino-tilings-4x5.txt" "$OUTPUT_DIR/data/"
 cp "$ROOT_DIR/data/tetromino-tilings-4x6.txt" "$OUTPUT_DIR/data/"
 
+if [[ "$INCLUDE_6X6" == true ]]; then
+  cp "$ROOT_DIR/data/tetromino-tilings-6x6.txt" "$OUTPUT_DIR/data/"
+fi
+
 echo "Built GitHub Pages static site in $OUTPUT_DIR"
-echo "6x6 is disabled; data/tetromino-tilings-6x6.txt was not copied."
+if [[ "$INCLUDE_6X6" == true ]]; then
+  echo "6x6 is disabled by default, but ?enable6x6=1 can opt in."
+else
+  echo "6x6 is disabled; data/tetromino-tilings-6x6.txt was not copied."
+fi
