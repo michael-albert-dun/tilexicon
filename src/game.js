@@ -106,6 +106,7 @@ document.addEventListener("click", closePanelsFromOutside);
 document.addEventListener("pointermove", handleDragMove);
 document.addEventListener("pointerup", endDragSelection);
 document.addEventListener("pointercancel", endDragSelection);
+window.addEventListener("resize", render);
 
 startGame();
 
@@ -918,6 +919,13 @@ function getTileAriaLabel(cell, lockedMoveIndex) {
 }
 
 function boardMaxWidth() {
+  const widthConstrained = boardMaxWidthForViewportWidth();
+  const heightConstrained = boardMaxWidthForViewportHeight();
+
+  return Math.min(widthConstrained, heightConstrained);
+}
+
+function boardMaxWidthForViewportWidth() {
   if (state.rows <= state.cols) {
     return 400;
   }
@@ -927,6 +935,37 @@ function boardMaxWidth() {
   }
 
   return Math.round(400 * Math.sqrt(state.cols / state.rows));
+}
+
+function boardMaxWidthForViewportHeight() {
+  const viewportHeight = window.innerHeight || 900;
+  const verticalChrome = (
+    appVerticalPadding() +
+    44 +
+    mastheadSpace() +
+    reservedSelectionSpace() +
+    12 +
+    toolbarSpace()
+  );
+  const maxBoardHeight = Math.max(300, viewportHeight - verticalChrome);
+
+  return Math.round(maxBoardHeight * state.cols / state.rows);
+}
+
+function appVerticalPadding() {
+  return window.matchMedia("(max-width: 430px)").matches ? 20 : 48;
+}
+
+function mastheadSpace() {
+  return window.matchMedia("(max-width: 430px)").matches ? 55 : 72;
+}
+
+function toolbarSpace() {
+  if (state.isIntro) {
+    return window.matchMedia("(max-width: 430px)").matches ? 60 : 64;
+  }
+
+  return window.matchMedia("(max-width: 430px)").matches ? 48 : 56;
 }
 
 function tileFontSize() {
