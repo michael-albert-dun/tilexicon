@@ -244,14 +244,30 @@ function showIntroPuzzle() {
 
   setBoardDimensions(4, 4);
   syncSettingsControls();
-  state.board = makeBoardFromLetters(words.join("").toUpperCase());
-  state.solution = words.map((word, row) => {
-    const cells = Array.from({ length: WORD_LENGTH }, (_, col) => cellId(row, col));
+  state.board = Array.from({ length: boardCellCount() }, (_, index) => ({
+    id: cellId(Math.floor(index / state.cols), index % state.cols),
+    row: Math.floor(index / state.cols),
+    col: index % state.cols,
+    letter: ""
+  }));
+
+  const tiling = randomItem(state.tilingsBySize["4x4"] || FALLBACK_TILINGS["4x4"]);
+  const pieces = compactTilingToPieces(tiling);
+
+  state.solution = pieces.map((piece, index) => {
+    const word = words[index];
+    const cells = piece
+      .map((id) => getCellById(id))
+      .sort(compareCells);
+
+    [...word.toUpperCase()].forEach((letter, letterIndex) => {
+      cells[letterIndex].letter = letter;
+    });
 
     return {
-      cells,
+      cells: cells.map((cell) => cell.id),
       word,
-      shape: "I"
+      shape: classifyTetromino(cells)
     };
   });
   resetProgress();
