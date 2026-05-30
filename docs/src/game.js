@@ -3,6 +3,10 @@ const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
 const CHEAT_CODE = ["q", "q", "q"];
 const DOUBLE_TAP_MS = 320;
+const INTRO_PHRASES = [
+  ["form", "each", "word", "here"],
+  ["each", "tile", "must", "link"]
+];
 const CONFIG = window.TilexiconConfig || {};
 const URL_FLAGS = new URLSearchParams(window.location.search);
 const ENABLE_6X6 = CONFIG.enable6x6 !== false || parseUrlBoolean(URL_FLAGS.get("enable6x6"), false);
@@ -48,6 +52,7 @@ const state = {
   invalidClearTimer: null,
   cheatIndex: 0,
   solvedWithHelp: false,
+  isIntro: false,
   startedAt: null,
   completedAt: null,
   readingOrder: READING_ORDER.ROW,
@@ -116,8 +121,8 @@ function configureBoardSizeControls() {
 
 async function startGame() {
   await loadGameData();
-  if (!loadPuzzleFromUrl() && !restoreStoredPuzzle()) {
-    generatePuzzle();
+  if (!loadPuzzleFromUrl()) {
+    showIntroPuzzle();
   }
   render();
 }
@@ -192,6 +197,7 @@ function parseTilingText(text) {
 }
 
 function generatePuzzle() {
+  state.isIntro = false;
   const tilings = currentTilings();
 
   if (tilings.length === 0) {
@@ -233,6 +239,32 @@ function generatePuzzle() {
   saveCurrentPuzzle();
 }
 
+function showIntroPuzzle() {
+  const words = randomItem(INTRO_PHRASES);
+
+  setBoardDimensions(4, 4);
+  syncSettingsControls();
+  state.board = makeBoardFromLetters(words.join("").toUpperCase());
+  state.solution = words.map((word, row) => {
+    const cells = Array.from({ length: WORD_LENGTH }, (_, col) => cellId(row, col));
+
+    return {
+      cells,
+      word,
+      shape: "I"
+    };
+  });
+  resetProgress();
+  state.moves = state.solution.map((move) => ({
+    cells: [...move.cells],
+    word: move.word,
+    shape: move.shape
+  }));
+  rebuildLockedMap();
+  state.isIntro = true;
+  state.completedAt = Date.now();
+}
+
 function currentTilings() {
   return state.tilingsBySize[currentSizeKey()] || [];
 }
@@ -272,6 +304,7 @@ function loadPuzzleFromUrl() {
   }
 
   applyUrlSettings();
+  state.isIntro = false;
   state.board = makeBoardFromLetters(letters);
   state.solution = readUrlSolution(letters);
   syncSettingsControls();
@@ -566,6 +599,7 @@ function restoreStoredPuzzle() {
     state.readingOrder = stored.readingOrder;
     state.strictMode = stored.strictMode;
     state.timerMode = stored.timerMode || (stored.untimedMode ? TIMER_MODE.UNTIMED : TIMER_MODE.TIMED);
+    state.isIntro = false;
     setBoardDimensions(stored.rows || DEFAULT_SIZE.rows, stored.cols || DEFAULT_SIZE.cols);
     state.board = makeBoardFromLetters(stored.letters);
     state.solution = stored.solution;
@@ -636,6 +670,7 @@ function resetProgress({ resetTimer = true } = {}) {
   state.invalidSelection = false;
   state.cheatIndex = 0;
   state.solvedWithHelp = false;
+  state.isIntro = false;
   state.startedAt = resetTimer || state.startedAt === null ? Date.now() : state.startedAt;
   state.completedAt = null;
   clearInvalidTimer();
@@ -1305,6 +1340,12 @@ function deleteMove(index) {
 }
 
 function restartGame() {
+  if (state.isIntro) {
+    showIntroPuzzle();
+    render();
+    return;
+  }
+
   resetProgress({ resetTimer: false });
   render();
 }
@@ -1735,7 +1776,7 @@ function renderCompletionMessage() {
   elements.completionMessage.innerHTML = "";
   elements.completionMessage.classList.toggle("is-complete", isPuzzleComplete());
 
-  if (!isPuzzleComplete() || !isTimedMode()) {
+  if (!isPuzzleComplete() || !isTimedMode() || state.isIntro) {
     return;
   }
 

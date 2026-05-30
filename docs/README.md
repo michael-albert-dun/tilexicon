@@ -15,6 +15,7 @@ without a build step.
 - Complete the puzzle by covering every tile.
 - Invalid four-tile selections briefly shake and clear.
 - Restart clears the current selections while keeping the same board.
+- The opening screen is a completed example puzzle; press New to start.
 - New generates a fresh puzzle.
 
 Words are read left-to-right, top-to-bottom by default. The reading order can
