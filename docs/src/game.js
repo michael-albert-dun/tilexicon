@@ -131,7 +131,11 @@ const elements = {
   fiveLetterButton: document.querySelector("#five-letter-button"),
   title: document.querySelector("#title"),
   ruleWordLength: document.querySelector("#rule-word-length"),
-  ruleTileCount: document.querySelector("#rule-tile-count")
+  ruleTileCount: document.querySelector("#rule-tile-count"),
+  exampleValidStraight: document.querySelector("#example-valid-straight"),
+  exampleValidBent: document.querySelector("#example-valid-bent"),
+  exampleInvalidDisconnected: document.querySelector("#example-invalid-disconnected"),
+  exampleInvalidOrder: document.querySelector("#example-invalid-order")
 };
 
 configureBoardSizeControls();
@@ -519,6 +523,71 @@ function updateModeText() {
   elements.title.dataset.hint = `Tile the board with ${mode.wordLabel} ${mode.tilingKind} words.`;
   elements.ruleWordLength.textContent = mode.wordLabel;
   elements.ruleTileCount.textContent = tileCountWords[state.wordLength] || String(state.wordLength);
+  renderExampleGrids();
+}
+
+function renderExampleGrids() {
+  const examples = modeExamples();
+
+  renderExampleGrid(elements.exampleValidStraight, examples.validStraight);
+  renderExampleGrid(elements.exampleValidBent, examples.validBent);
+  renderExampleGrid(elements.exampleInvalidDisconnected, examples.invalidDisconnected);
+  renderExampleGrid(elements.exampleInvalidOrder, examples.invalidOrder);
+}
+
+function modeExamples() {
+  if (state.wordLength === 5) {
+    return {
+      validStraight: exampleCells("WORDS", [
+        [1, 1], [1, 2], [1, 3], [1, 4], [1, 5]
+      ]),
+      validBent: exampleCells("WORDS", [
+        [1, 1], [1, 2], [2, 2], [3, 2], [3, 3]
+      ]),
+      invalidDisconnected: exampleCells("WORDS", [
+        [1, 1], [1, 3], [2, 2], [3, 3], [2, 5]
+      ]),
+      invalidOrder: exampleCells("WORDS", [
+        [2, 1], [2, 2], [2, 3], [3, 2], [2, 4]
+      ])
+    };
+  }
+
+  return {
+    validStraight: exampleCells("WORD", [
+      [1, 1], [1, 2], [1, 3], [1, 4]
+    ]),
+    validBent: exampleCells("WORD", [
+      [1, 1], [1, 2], [2, 2], [3, 2]
+    ]),
+    invalidDisconnected: exampleCells("WORD", [
+      [1, 1], [1, 3], [2, 2], [3, 3]
+    ]),
+    invalidOrder: exampleCells("WORD", [
+      [2, 1], [2, 2], [2, 3], [3, 2]
+    ])
+  };
+}
+
+function exampleCells(word, positions) {
+  return [...word].map((letter, index) => ({
+    letter,
+    row: positions[index][0],
+    col: positions[index][1]
+  }));
+}
+
+function renderExampleGrid(element, cells) {
+  element.innerHTML = "";
+  element.style.setProperty("--example-cols", String(Math.max(...cells.map((cell) => cell.col))));
+
+  cells.forEach((cell) => {
+    const tile = document.createElement("b");
+
+    tile.textContent = cell.letter;
+    tile.style.gridArea = `${cell.row} / ${cell.col}`;
+    element.append(tile);
+  });
 }
 
 function currentSizeKey() {

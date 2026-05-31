@@ -397,7 +397,7 @@ button {
 
 .example-grid {
   display: grid;
-  grid-template-columns: repeat(4, 22px);
+  grid-template-columns: repeat(var(--example-cols, 4), 22px);
   grid-template-rows: repeat(3, 22px);
   gap: 3px;
   justify-content: start;
