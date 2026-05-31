@@ -1513,6 +1513,7 @@ hart
 hash
 hask
 hasp
+hats
 hate
 hath
 hatt
@@ -2502,6 +2503,7 @@ ogre
 ogum
 ohia
 ohoy
+oils
 oily
 oime
 oint
