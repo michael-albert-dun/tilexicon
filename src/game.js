@@ -1,7 +1,7 @@
 const DEFAULT_WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
-const CHEAT_CODE = ["q", "q", "q"];
+const CHEAT_CODE = [..."ududlrlrab"];
 const DOUBLE_TAP_MS = 320;
 const INTRO_PHRASES = [
   ["find", "each", "word", "here"],

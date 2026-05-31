@@ -1,27 +1,48 @@
-const WORD_LENGTH = 4;
+const DEFAULT_WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
-const CHEAT_CODE = ["q", "q", "q"];
+const CHEAT_CODE = [..."ududlrlrab"];
 const DOUBLE_TAP_MS = 320;
 const INTRO_PHRASES = [
   ["find", "each", "word", "here"],
   ["each", "tile", "must", "link"]
 ];
+const WORD_LENGTH_CUE_SHAPES = new Map();
 const CONFIG = window.TilexiconConfig || {};
 const URL_FLAGS = new URLSearchParams(window.location.search);
 const ENABLE_6X6 = CONFIG.enable6x6 !== false || parseUrlBoolean(URL_FLAGS.get("enable6x6"), false);
-const ALL_BOARD_SIZES = [
-  { rows: 4, cols: 4, label: "4 x 4" },
-  { rows: 4, cols: 5, label: "4 x 5" },
-  { rows: 5, cols: 4, label: "5 x 4" },
-  { rows: 4, cols: 6, label: "4 x 6" },
-  { rows: 6, cols: 4, label: "6 x 4" },
-  { rows: 6, cols: 6, label: "6 x 6" }
-];
-const BOARD_SIZES = ALL_BOARD_SIZES.filter((size) => (
-  ENABLE_6X6 || sizeKey(size.rows, size.cols) !== "6x6"
-));
-const DEFAULT_SIZE = BOARD_SIZES[0];
+const MODES = {
+  4: {
+    wordLength: 4,
+    wordLabel: "four-letter",
+    tilingKind: "tetromino",
+    allowedWordsUrl: "data/allowed-words.txt",
+    commonWordsUrl: "data/common-words.txt",
+    tilingPrefix: "tetromino",
+    boardSizes: [
+      { rows: 4, cols: 4, label: "4 x 4" },
+      { rows: 4, cols: 5, label: "4 x 5" },
+      { rows: 5, cols: 4, label: "5 x 4" },
+      { rows: 4, cols: 6, label: "4 x 6" },
+      { rows: 6, cols: 4, label: "6 x 4" },
+      { rows: 6, cols: 6, label: "6 x 6" }
+    ]
+  },
+  5: {
+    wordLength: 5,
+    wordLabel: "five-letter",
+    tilingKind: "pentomino",
+    allowedWordsUrl: "data/allowed-words-5.txt",
+    commonWordsUrl: "data/common-words-5.txt",
+    tilingPrefix: "pentomino",
+    boardSizes: [
+      { rows: 4, cols: 5, label: "4 x 5" },
+      { rows: 5, cols: 4, label: "5 x 4" },
+      { rows: 5, cols: 5, label: "5 x 5" }
+    ]
+  }
+};
+const DEFAULT_SIZE = modeBoardSizes(DEFAULT_WORD_LENGTH)[0];
 const FALLBACK_TILINGS = {
   "4x4": ["0000111122223333"]
 };
@@ -37,6 +58,7 @@ const TIMER_MODE = {
   UNTIMED: "untimed"
 };
 const state = {
+  wordLength: DEFAULT_WORD_LENGTH,
   rows: DEFAULT_SIZE.rows,
   cols: DEFAULT_SIZE.cols,
   board: [],
@@ -52,6 +74,8 @@ const state = {
   invalidClearTimer: null,
   cheatIndex: 0,
   solvedWithHelp: false,
+  wordLengthCueCells: [],
+  wordLengthCueColorIndex: 0,
   isIntro: false,
   startedAt: null,
   completedAt: null,
@@ -62,11 +86,27 @@ const state = {
   anagrams: buildAnagramMap(FALLBACK_WORDS),
   preferredAnagrams: buildAnagramMap(FALLBACK_WORDS),
   generatorWords: [...FALLBACK_WORDS],
-  tilingsBySize: { ...FALLBACK_TILINGS },
+  modeData: {
+    4: {
+      allowedWords: new Set(FALLBACK_WORDS),
+      anagrams: buildAnagramMap(FALLBACK_WORDS),
+      preferredAnagrams: buildAnagramMap(FALLBACK_WORDS),
+      generatorWords: [...FALLBACK_WORDS],
+      tilingsBySize: { ...FALLBACK_TILINGS }
+    },
+    5: {
+      allowedWords: new Set(),
+      anagrams: buildAnagramMap([]),
+      preferredAnagrams: buildAnagramMap([]),
+      generatorWords: [],
+      tilingsBySize: {}
+    }
+  },
   solution: []
 };
 
 const elements = {
+  playArea: document.querySelector(".play-area"),
   board: document.querySelector("#board"),
   selectionLines: document.querySelector("#selection-lines"),
   completionMessage: document.querySelector("#completion-message"),
@@ -80,11 +120,16 @@ const elements = {
   infoButton: document.querySelector("#info-button"),
   infoPanel: document.querySelector("#info-panel"),
   shareButton: document.querySelector("#share-button"),
+  modeSwitchButton: document.querySelector("#mode-switch-button"),
   keyboardPanel: document.querySelector("#keyboard-panel"),
   printPanel: document.querySelector("#print-panel"),
   printGrid: document.querySelector("#print-grid"),
   restartButton: document.querySelector("#restart-button"),
-  newButton: document.querySelector("#new-button")
+  newButton: document.querySelector("#new-button"),
+  fiveLetterButton: document.querySelector("#five-letter-button"),
+  title: document.querySelector("#title"),
+  ruleWordLength: document.querySelector("#rule-word-length"),
+  ruleTileCount: document.querySelector("#rule-tile-count")
 };
 
 configureBoardSizeControls();
@@ -99,8 +144,10 @@ elements.strictModeInput.addEventListener("change", updateStrictMode);
 elements.timerModeInput.addEventListener("change", updateTimerMode);
 elements.infoButton.addEventListener("click", toggleInfoPanel);
 elements.shareButton.addEventListener("click", copyPuzzleToClipboard);
+elements.modeSwitchButton.addEventListener("click", switchWordLengthMode);
 elements.restartButton.addEventListener("click", restartGame);
 elements.newButton.addEventListener("click", startNewGame);
+elements.fiveLetterButton.addEventListener("click", startFiveLetterGame);
 document.addEventListener("keydown", handleKeydown);
 document.addEventListener("click", closePanelsFromOutside);
 document.addEventListener("pointermove", handleDragMove);
@@ -129,26 +176,34 @@ async function startGame() {
 }
 
 async function loadGameData() {
-  const tilingSizes = canonicalBoardSizes();
+  await Promise.all(Object.values(MODES).map(loadModeData));
+  applyModeData();
+
+  updateSettingsSummary();
+}
+
+async function loadModeData(mode) {
+  const tilingSizes = canonicalBoardSizes(mode.wordLength);
   const tilingRequests = tilingSizes.map((size) =>
-    fetchText(`data/tetromino-tilings-${canonicalSizeKey(size.rows, size.cols)}.txt`)
+    fetchText(`data/${mode.tilingPrefix}-tilings-${canonicalSizeKey(size.rows, size.cols)}.txt`)
   );
   const [allowedText, commonText, ...tilingTexts] = await Promise.all([
-    fetchText("data/allowed-words.txt"),
-    fetchText("data/common-words.txt"),
+    fetchText(mode.allowedWordsUrl),
+    fetchText(mode.commonWordsUrl),
     ...tilingRequests
   ]);
+  const modeData = state.modeData[mode.wordLength];
+  const allowedWords = parseWordList(allowedText);
+  const commonWords = parseWordList(commonText);
 
-  if (allowedText) {
-    state.allowedWords = new Set(
-      allowedText.split("\n").map((word) => word.trim()).filter(Boolean)
-    );
-    state.anagrams = buildAnagramMap(state.allowedWords);
+  if (allowedWords.length > 0 || commonWords.length > 0) {
+    modeData.allowedWords = new Set([...allowedWords, ...commonWords]);
+    modeData.anagrams = buildAnagramMap(modeData.allowedWords);
   }
 
-  if (commonText) {
-    state.generatorWords = commonText.split("\n").map((word) => word.trim()).filter(Boolean);
-    state.preferredAnagrams = buildAnagramMap(state.generatorWords);
+  if (commonWords.length > 0) {
+    modeData.generatorWords = commonWords;
+    modeData.preferredAnagrams = buildAnagramMap(modeData.generatorWords);
   }
 
   tilingTexts.forEach((text, index) => {
@@ -156,26 +211,24 @@ async function loadGameData() {
 
     if (tilings.length > 0) {
       const { rows, cols } = tilingSizes[index];
-      storeTilings(rows, cols, tilings);
+      storeTilings(mode.wordLength, rows, cols, tilings);
     }
   });
-
-  updateSettingsSummary();
 }
 
-function canonicalBoardSizes() {
-  return BOARD_SIZES
+function canonicalBoardSizes(wordLength = state.wordLength) {
+  return modeBoardSizes(wordLength)
     .filter((size) => size.rows <= size.cols)
     .filter((size, index, sizes) => (
       sizes.findIndex((other) => other.rows === size.rows && other.cols === size.cols) === index
     ));
 }
 
-function storeTilings(rows, cols, tilings) {
-  state.tilingsBySize[sizeKey(rows, cols)] = tilings;
+function storeTilings(wordLength, rows, cols, tilings) {
+  state.modeData[wordLength].tilingsBySize[sizeKey(rows, cols)] = tilings;
 
-  if (rows !== cols && isSupportedSize(cols, rows)) {
-    state.tilingsBySize[sizeKey(cols, rows)] = tilings.map((tiling) =>
+  if (rows !== cols && isSupportedSize(cols, rows, wordLength)) {
+    state.modeData[wordLength].tilingsBySize[sizeKey(cols, rows)] = tilings.map((tiling) =>
       transposeTiling(tiling, rows, cols)
     );
   }
@@ -197,12 +250,19 @@ function parseTilingText(text) {
     .filter(Boolean);
 }
 
+function parseWordList(text) {
+  return (text || "")
+    .split("\n")
+    .map((word) => word.trim())
+    .filter(Boolean);
+}
+
 function generatePuzzle() {
   state.isIntro = false;
   const tilings = currentTilings();
 
   if (tilings.length === 0) {
-    setBoardDimensions(DEFAULT_SIZE.rows, DEFAULT_SIZE.cols);
+    setBoardDimensions(defaultSize().rows, defaultSize().cols);
   }
 
   const tiling = randomItem(currentTilings());
@@ -229,7 +289,7 @@ function generatePuzzle() {
     });
 
     return {
-      shape: classifyTetromino(cells),
+      shape: classifyPolyomino(cells),
       word,
       readingOrder: pieceReadingOrder,
       cells: cells.map((cell) => cell.id)
@@ -243,6 +303,7 @@ function generatePuzzle() {
 function showIntroPuzzle() {
   const words = randomItem(INTRO_PHRASES);
 
+  setWordLength(DEFAULT_WORD_LENGTH);
   setBoardDimensions(4, 4);
   syncSettingsControls();
   state.board = Array.from({ length: boardCellCount() }, (_, index) => ({
@@ -252,7 +313,7 @@ function showIntroPuzzle() {
     letter: ""
   }));
 
-  const tiling = randomItem(state.tilingsBySize["4x4"] || FALLBACK_TILINGS["4x4"]);
+  const tiling = randomItem(state.modeData[4].tilingsBySize["4x4"] || FALLBACK_TILINGS["4x4"]);
   const pieces = compactTilingToPieces(tiling);
 
   state.solution = pieces.map((piece, index) => {
@@ -268,7 +329,7 @@ function showIntroPuzzle() {
     return {
       cells: cells.map((cell) => cell.id),
       word,
-      shape: classifyTetromino(cells)
+      shape: classifyPolyomino(cells)
     };
   });
   resetProgress();
@@ -283,7 +344,7 @@ function showIntroPuzzle() {
 }
 
 function currentTilings() {
-  return state.tilingsBySize[currentSizeKey()] || [];
+  return state.modeData[state.wordLength].tilingsBySize[currentSizeKey()] || [];
 }
 
 function compactTilingToPieces(tiling) {
@@ -343,9 +404,26 @@ function readUrlGrid() {
 
 function applyUrlSize() {
   const params = new URLSearchParams(window.location.search);
-  const size = parseSizeKey(params.get("size"));
+  const wordLength = readUrlWordLength(params);
+  const size = parseSizeKey(params.get("size"), wordLength);
 
-  setBoardDimensions(size?.rows || DEFAULT_SIZE.rows, size?.cols || DEFAULT_SIZE.cols);
+  setWordLength(wordLength);
+  setBoardDimensions(size?.rows || defaultSize().rows, size?.cols || defaultSize().cols);
+}
+
+function readUrlWordLength(params) {
+  const explicitMode = Number(params.get("mode") || params.get("words") || params.get("wordLength"));
+  const explicitSize = params.get("size");
+
+  if (MODES[explicitMode]) {
+    return explicitMode;
+  }
+
+  if (explicitSize === "5x5") {
+    return 5;
+  }
+
+  return DEFAULT_WORD_LENGTH;
 }
 
 function applyUrlSettings() {
@@ -379,14 +457,19 @@ function parseUrlBoolean(value, fallback) {
   return ["1", "t", "true", "yes", "on"].includes(value.toLowerCase());
 }
 
-function parseSizeKey(value) {
+function parseSizeKey(value, wordLength = state.wordLength) {
   if (!value) {
     return null;
   }
 
   const [rows, cols] = value.toLowerCase().split("x").map(Number);
 
-  return isSupportedSize(rows, cols) ? { rows, cols } : null;
+  return isSupportedSize(rows, cols, wordLength) ? { rows, cols } : null;
+}
+
+function setWordLength(wordLength) {
+  state.wordLength = MODES[wordLength] ? wordLength : DEFAULT_WORD_LENGTH;
+  applyModeData();
 }
 
 function setBoardDimensions(rows, cols) {
@@ -394,8 +477,46 @@ function setBoardDimensions(rows, cols) {
   state.cols = cols;
 }
 
-function isSupportedSize(rows, cols) {
-  return BOARD_SIZES.some((size) => size.rows === rows && size.cols === cols);
+function isSupportedSize(rows, cols, wordLength = state.wordLength) {
+  return modeBoardSizes(wordLength).some((size) => size.rows === rows && size.cols === cols);
+}
+
+function modeBoardSizes(wordLength = state.wordLength) {
+  const mode = MODES[wordLength] || MODES[DEFAULT_WORD_LENGTH];
+
+  return mode.boardSizes.filter((size) => (
+    ENABLE_6X6 || sizeKey(size.rows, size.cols) !== "6x6"
+  ));
+}
+
+function defaultSize(wordLength = state.wordLength) {
+  return modeBoardSizes(wordLength)[0];
+}
+
+function currentMode() {
+  return MODES[state.wordLength] || MODES[DEFAULT_WORD_LENGTH];
+}
+
+function applyModeData() {
+  const modeData = state.modeData[state.wordLength];
+
+  state.allowedWords = modeData.allowedWords;
+  state.anagrams = modeData.anagrams;
+  state.preferredAnagrams = modeData.preferredAnagrams;
+  state.generatorWords = modeData.generatorWords;
+  updateModeText();
+}
+
+function updateModeText() {
+  const mode = currentMode();
+  const tileCountWords = {
+    4: "four",
+    5: "five"
+  };
+
+  elements.title.dataset.hint = `Tile the board with ${mode.wordLabel} ${mode.tilingKind} words.`;
+  elements.ruleWordLength.textContent = mode.wordLabel;
+  elements.ruleTileCount.textContent = tileCountWords[state.wordLength] || String(state.wordLength);
 }
 
 function currentSizeKey() {
@@ -415,7 +536,7 @@ function boardCellCount() {
 }
 
 function pieceCount() {
-  return boardCellCount() / WORD_LENGTH;
+  return boardCellCount() / state.wordLength;
 }
 
 function makeGridString() {
@@ -427,6 +548,7 @@ function makeGridUrl() {
   const grid = makeGridString();
 
   url.searchParams.set("size", currentSizeKey());
+  url.searchParams.set("mode", String(state.wordLength));
   url.searchParams.set("grid", grid);
   url.searchParams.set("order", state.readingOrder);
   url.searchParams.set("strict", state.strictMode ? "1" : "0");
@@ -434,8 +556,10 @@ function makeGridUrl() {
   url.searchParams.delete("untimed");
   url.searchParams.delete("sol");
 
-  if (state.solution.length > 0 && isValidSolution(state.solution)) {
-    url.searchParams.set("sol", encodeSolution(state.solution, grid));
+  const solution = validCurrentSolution();
+
+  if (solution.length > 0) {
+    url.searchParams.set("sol", encodeSolution(solution, grid));
   }
 
   url.hash = "";
@@ -447,6 +571,14 @@ function readUrlSolution(grid) {
   const solution = decodeSolution(params.get("sol"), grid);
 
   return Array.isArray(solution) ? solution : [];
+}
+
+function validCurrentSolution() {
+  if (state.solution.length > 0 && isValidSolution(state.solution)) {
+    return state.solution;
+  }
+
+  return findCurrentGridSolution();
 }
 
 function encodeSolution(solution, grid) {
@@ -519,8 +651,17 @@ function makeSolutionMove(cells) {
   return {
     cells,
     word,
-    shape: classifyTetromino(cellObjects)
+    shape: classifyPolyomino(cellObjects)
   };
+}
+
+function findCurrentGridSolution() {
+  return currentTilings()
+    .map((tiling) => compactTilingToPieces(tiling).map((cells) => makeSolutionMove(cells)))
+    .find((solution) => (
+      solution.every((move) => move !== null) &&
+      isValidSolution(solution)
+    )) || [];
 }
 
 function resolveSolutionWord(cells) {
@@ -594,12 +735,12 @@ function isValidSolution(solution) {
     usedIds.size === boardCellCount() &&
     solution.every((move) => (
       Array.isArray(move.cells) &&
-      move.cells.length === WORD_LENGTH &&
+      move.cells.length === state.wordLength &&
       move.cells.every((id) => ids.has(id)) &&
       isEdgeConnected(move.cells.map(getCellById)) &&
       resolveSolutionWord(move.cells.map(getCellById)) !== null &&
       typeof move.word === "string" &&
-      /^[a-z]{4}$/i.test(move.word) &&
+      new RegExp(`^[a-z]{${state.wordLength}}$`, "i").test(move.word) &&
       typeof move.shape === "string"
     ))
   );
@@ -617,7 +758,8 @@ function restoreStoredPuzzle() {
     state.strictMode = stored.strictMode;
     state.timerMode = stored.timerMode || (stored.untimedMode ? TIMER_MODE.UNTIMED : TIMER_MODE.TIMED);
     state.isIntro = false;
-    setBoardDimensions(stored.rows || DEFAULT_SIZE.rows, stored.cols || DEFAULT_SIZE.cols);
+    setWordLength(stored.wordLength || DEFAULT_WORD_LENGTH);
+    setBoardDimensions(stored.rows || defaultSize().rows, stored.cols || defaultSize().cols);
     state.board = makeBoardFromLetters(stored.letters);
     state.solution = stored.solution;
     state.startedAt = stored.startedAt || Date.now();
@@ -640,6 +782,7 @@ function saveCurrentPuzzle() {
         readingOrder: state.readingOrder,
         strictMode: state.strictMode,
         timerMode: state.timerMode,
+        wordLength: state.wordLength,
         rows: state.rows,
         cols: state.cols,
         startedAt: state.startedAt
@@ -654,8 +797,17 @@ function isStoredPuzzle(stored) {
   return (
     stored &&
     typeof stored.letters === "string" &&
-    isSupportedSize(stored.rows || DEFAULT_SIZE.rows, stored.cols || DEFAULT_SIZE.cols) &&
-    stored.letters.length === (stored.rows || DEFAULT_SIZE.rows) * (stored.cols || DEFAULT_SIZE.cols) &&
+    MODES[stored.wordLength || DEFAULT_WORD_LENGTH] &&
+    isSupportedSize(
+      stored.rows || defaultSize(stored.wordLength || DEFAULT_WORD_LENGTH).rows,
+      stored.cols || defaultSize(stored.wordLength || DEFAULT_WORD_LENGTH).cols,
+      stored.wordLength || DEFAULT_WORD_LENGTH
+    ) &&
+    stored.letters.length === (
+      stored.rows || defaultSize(stored.wordLength || DEFAULT_WORD_LENGTH).rows
+    ) * (
+      stored.cols || defaultSize(stored.wordLength || DEFAULT_WORD_LENGTH).cols
+    ) &&
     stored.letters.split("").every((letter) => /^[A-Z]$/.test(letter)) &&
     Object.values(READING_ORDER).includes(stored.readingOrder) &&
     typeof stored.strictMode === "boolean" &&
@@ -687,6 +839,8 @@ function resetProgress({ resetTimer = true } = {}) {
   state.invalidSelection = false;
   state.cheatIndex = 0;
   state.solvedWithHelp = false;
+  state.wordLengthCueCells = randomWordLengthCueCells();
+  state.wordLengthCueColorIndex = randomInt(GROUP_COLOR_COUNT);
   state.isIntro = false;
   state.startedAt = resetTimer || state.startedAt === null ? Date.now() : state.startedAt;
   state.completedAt = null;
@@ -745,13 +899,75 @@ function render() {
 
   renderSelectionLines();
   renderToolbar();
+  renderModeSwitchButton();
+}
+
+function renderModeSwitchButton() {
+  const nextWordLength = alternateWordLength();
+
+  elements.modeSwitchButton.hidden = state.isIntro;
+  elements.modeSwitchButton.textContent = String(state.wordLength);
+  elements.modeSwitchButton.setAttribute(
+    "aria-label",
+    `Switch to ${nextWordLength}-letter mode`
+  );
 }
 
 function renderToolbar() {
   elements.restartButton.hidden = state.isIntro;
-  elements.newButton.textContent = state.isIntro ? "Start" : "New";
-  elements.newButton.setAttribute("aria-label", state.isIntro ? "Start game" : "New puzzle");
+  elements.fiveLetterButton.hidden = !state.isIntro;
+  elements.newButton.setAttribute("aria-label", state.isIntro ? "Start four-letter game" : "New puzzle");
+  elements.fiveLetterButton.setAttribute("aria-label", "Start five-letter game");
+  elements.playArea.classList.toggle("is-intro", state.isIntro);
   elements.newButton.closest(".toolbar").classList.toggle("is-intro", state.isIntro);
+
+  if (state.isIntro) {
+    renderIntroModeButton(
+      elements.newButton,
+      [
+        { letter: "O", row: 1, col: 1 },
+        { letter: "P", row: 1, col: 2 },
+        { letter: "E", row: 2, col: 2 },
+        { letter: "N", row: 2, col: 3 }
+      ],
+      "intro-tiles-open",
+      3
+    );
+    renderIntroModeButton(
+      elements.fiveLetterButton,
+      [
+        { letter: "S", row: 1, col: 1 },
+        { letter: "T", row: 1, col: 2 },
+        { letter: "A", row: 1, col: 3 },
+        { letter: "R", row: 2, col: 2 },
+        { letter: "T", row: 2, col: 3 }
+      ],
+      "intro-tiles-start",
+      3
+    );
+    return;
+  }
+
+  elements.newButton.textContent = "New";
+}
+
+function renderIntroModeButton(button, cells, className, cols) {
+  button.textContent = "";
+
+  const tileDisplay = document.createElement("span");
+  tileDisplay.className = `intro-tiles ${className}`;
+  tileDisplay.style.setProperty("--intro-cols", String(cols));
+  tileDisplay.setAttribute("aria-hidden", "true");
+
+  cells.forEach(({ letter, row, col }) => {
+    const tile = document.createElement("span");
+    tile.className = "intro-tile";
+    tile.textContent = letter;
+    tile.style.gridArea = `${row} / ${col}`;
+    tileDisplay.append(tile);
+  });
+
+  button.append(tileDisplay);
 }
 
 function startDragSelection(cell, event) {
@@ -988,8 +1204,14 @@ function setSelectionLayoutSpace() {
   elements.selectionLines.style.setProperty("--complete-row-space", `${completeRowSpace}px`);
   elements.completionMessage.style.setProperty(
     "--completion-message-space",
-    `${selectionSpace - completeRowSpace}px`
+    `${completionMessageSpace(selectionSpace, completeRowSpace)}px`
   );
+}
+
+function completionMessageSpace(selectionSpace, completeRowSpace) {
+  const fullSpace = selectionSpace - completeRowSpace;
+
+  return state.isIntro ? Math.max(0, Math.round(fullSpace * 0.33)) : fullSpace;
 }
 
 function reservedSelectionSpace() {
@@ -1050,13 +1272,13 @@ function addCellToSelection(cell) {
 
   state.activeMoveIndex = null;
 
-  if (state.selection.includes(cell.id) || state.selection.length >= WORD_LENGTH) {
+  if (state.selection.includes(cell.id) || state.selection.length >= state.wordLength) {
     return;
   }
 
   state.selection.push(cell.id);
 
-  if (state.selection.length === WORD_LENGTH) {
+  if (state.selection.length === state.wordLength) {
     state.dragSelection = null;
     finishSelection();
     return;
@@ -1137,10 +1359,10 @@ function finishSelection() {
 }
 
 function validateSelection(selection) {
-  if (selection.length !== WORD_LENGTH) {
+  if (selection.length !== state.wordLength) {
     return {
       valid: false,
-      reason: `Choose exactly ${WORD_LENGTH} tiles.`,
+      reason: `Choose exactly ${state.wordLength} tiles.`,
       shape: "Incomplete"
     };
   }
@@ -1166,15 +1388,15 @@ function validateSelection(selection) {
   if (!isEdgeConnected(cells)) {
     return {
       valid: false,
-      reason: "Those four tiles are not edge-connected.",
+      reason: `Those ${state.wordLength} tiles are not edge-connected.`,
       shape: "Disconnected"
     };
   }
 
   return {
     valid: true,
-    reason: "Valid tetromino.",
-    shape: classifyTetromino(cells)
+    reason: `Valid ${currentMode().tilingKind}.`,
+    shape: classifyPolyomino(cells)
   };
 }
 
@@ -1197,7 +1419,11 @@ function isEdgeConnected(cells) {
   return seen.size === cells.length;
 }
 
-function classifyTetromino(cells) {
+function classifyPolyomino(cells) {
+  if (cells.length !== 4) {
+    return currentMode().tilingKind[0].toUpperCase() + currentMode().tilingKind.slice(1);
+  }
+
   const normalized = normalizeCells(cells);
   const signature = normalized.map(({ row, col }) => `${row},${col}`).join(";");
 
@@ -1343,11 +1569,15 @@ function renderSelectionLines() {
     elements.selectionLines.append(row);
   }
 
+  if (shouldShowWordLengthCue()) {
+    renderWordLengthCue(elements.selectionLines);
+  }
+
   renderCompletionMessage();
 }
 
 function readCurrentSelectionDisplayWord() {
-  return state.selection.length === WORD_LENGTH
+  return state.selection.length === state.wordLength
     ? resolveSelectionWord(state.selection) || readSelectionWord(state.selection)
     : readSelectionWord(state.selection);
 }
@@ -1360,6 +1590,76 @@ function makeMiniTile(letter, extraClassName) {
   tile.setAttribute("aria-hidden", "true");
 
   return tile;
+}
+
+function randomWordLengthCueCells() {
+  const shapes = wordLengthCueShapes(state.wordLength);
+
+  return randomItem(shapes).map(({ row, col }) => ({ row, col }));
+}
+
+function wordLengthCueShapes(size) {
+  if (!WORD_LENGTH_CUE_SHAPES.has(size)) {
+    WORD_LENGTH_CUE_SHAPES.set(size, buildWordLengthCueShapes(size));
+  }
+
+  return WORD_LENGTH_CUE_SHAPES.get(size);
+}
+
+function buildWordLengthCueShapes(size) {
+  let shapes = [normalizeCueCells([{ row: 0, col: 0 }])];
+
+  for (let count = 1; count < size; count += 1) {
+    const nextShapes = new Map();
+
+    shapes.forEach((shape) => {
+      shape.forEach((cell) => {
+        cueNeighbors(cell).forEach((neighbor) => {
+          const expanded = normalizeCueCells([...shape, neighbor]);
+
+          if (expanded.length === count + 1) {
+            nextShapes.set(cueShapeKey(expanded), expanded);
+          }
+        });
+      });
+    });
+
+    shapes = [...nextShapes.values()];
+  }
+
+  return shapes.filter((shape) => shape.length === size && cueShapeHeight(shape) <= 3);
+}
+
+function cueNeighbors(cell) {
+  return [
+    { row: cell.row - 1, col: cell.col },
+    { row: cell.row + 1, col: cell.col },
+    { row: cell.row, col: cell.col - 1 },
+    { row: cell.row, col: cell.col + 1 }
+  ];
+}
+
+function normalizeCueCells(cells) {
+  const uniqueCells = new Map();
+
+  cells.forEach((cell) => {
+    uniqueCells.set(`${cell.row},${cell.col}`, cell);
+  });
+
+  const minRow = Math.min(...[...uniqueCells.values()].map((cell) => cell.row));
+  const minCol = Math.min(...[...uniqueCells.values()].map((cell) => cell.col));
+
+  return [...uniqueCells.values()]
+    .map((cell) => ({ row: cell.row - minRow, col: cell.col - minCol }))
+    .sort(compareCells);
+}
+
+function cueShapeKey(cells) {
+  return cells.map((cell) => `${cell.row},${cell.col}`).join(";");
+}
+
+function cueShapeHeight(cells) {
+  return Math.max(...cells.map((cell) => cell.row)) + 1;
 }
 
 function getSelectionRowClassName(index) {
@@ -1437,6 +1737,34 @@ function clearInvalidTimer() {
 }
 
 function startNewGame() {
+  if (state.isIntro) {
+    startGameWithWordLength(DEFAULT_WORD_LENGTH);
+    return;
+  }
+
+  generatePuzzle();
+  updateAddressBar();
+  render();
+}
+
+function startFiveLetterGame() {
+  startGameWithWordLength(5);
+}
+
+function switchWordLengthMode() {
+  startGameWithWordLength(alternateWordLength());
+}
+
+function alternateWordLength() {
+  return state.wordLength === 5 ? DEFAULT_WORD_LENGTH : 5;
+}
+
+function startGameWithWordLength(wordLength) {
+  setWordLength(wordLength);
+  const size = defaultSize();
+
+  setBoardDimensions(size.rows, size.cols);
+  syncSettingsControls();
   generatePuzzle();
   updateAddressBar();
   render();
@@ -1557,6 +1885,7 @@ function updateSettingsSummary() {
   };
 
   elements.settingsSummary.textContent = [
+    `${state.wordLength}L`,
     currentSizeKey(),
     labels[state.readingOrder],
     state.strictMode ? "Strict" : null,
@@ -1565,6 +1894,7 @@ function updateSettingsSummary() {
 }
 
 function syncSettingsControls() {
+  configureBoardSizeControls();
   elements.boardSizeInputs.forEach((input) => {
     input.checked = input.value === currentSizeKey();
   });
@@ -1815,6 +2145,8 @@ function rebuildLockedMap() {
 }
 
 function solveWithHelp() {
+  state.solution = validCurrentSolution();
+
   if (state.solution.length === 0 || !isValidSolution(state.solution)) {
     return;
   }
@@ -1852,6 +2184,43 @@ function renderCompletionMessage() {
   time.textContent = formatElapsedTime(state.completedAt - state.startedAt);
 
   elements.completionMessage.append(label, time);
+}
+
+function shouldShowWordLengthCue() {
+  return (
+    !state.isIntro &&
+    !isPuzzleComplete() &&
+    state.moves.length === 0 &&
+    state.selection.length === 0 &&
+    state.wordLengthCueCells.length > 0
+  );
+}
+
+function renderWordLengthCue(parent) {
+  const cue = document.createElement("div");
+  const cols = Math.max(...state.wordLengthCueCells.map((cell) => cell.col)) + 1;
+  const letters = wordLengthCueWord().toUpperCase();
+
+  cue.className = "word-length-cue";
+  cue.style.setProperty("--cue-cols", String(cols));
+  cue.style.setProperty("--cue-bg", `var(--locked-${String.fromCharCode(97 + state.wordLengthCueColorIndex)})`);
+  cue.setAttribute("aria-label", `${wordLengthCueWord()} mode: ${state.wordLength}-letter words`);
+
+  state.wordLengthCueCells.forEach((cell, index) => {
+    const tile = document.createElement("span");
+
+    tile.className = "word-length-cue-tile";
+    tile.textContent = letters[index];
+    tile.style.gridArea = `${cell.row + 1} / ${cell.col + 1}`;
+    tile.setAttribute("aria-hidden", "true");
+    cue.append(tile);
+  });
+
+  parent.append(cue);
+}
+
+function wordLengthCueWord() {
+  return state.wordLength === 5 ? "Model" : "Mode";
 }
 
 function isPuzzleComplete() {
