@@ -45,6 +45,7 @@ cp "$ROOT_DIR/data/tetromino-tilings-4x5.txt" "$OUTPUT_DIR/data/"
 cp "$ROOT_DIR/data/tetromino-tilings-4x6.txt" "$OUTPUT_DIR/data/"
 cp "$ROOT_DIR/data/pentomino-tilings-4x5.txt" "$OUTPUT_DIR/data/"
 cp "$ROOT_DIR/data/pentomino-tilings-5x5.txt" "$OUTPUT_DIR/data/"
+cp "$ROOT_DIR/data/pentomino-tilings-5x6.txt" "$OUTPUT_DIR/data/"
 
 if [[ "$INCLUDE_6X6" == true ]]; then
   cp "$ROOT_DIR/data/tetromino-tilings-6x6.txt" "$OUTPUT_DIR/data/"

@@ -734,7 +734,11 @@ h1 {
 }
 
 .selection-lines.is-complete-medium {
-  width: min(100%, 210px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  justify-content: center;
+  justify-items: center;
+  width: min(100%, 440px);
 }
 
 .selection-lines.is-complete .selection-row {

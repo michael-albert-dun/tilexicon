@@ -1,7 +1,7 @@
 const DEFAULT_WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
-const CHEAT_CODE = [..."ududlrlrab"];
+const CHEAT_CODE = ["q", "q", "q"];
 const DOUBLE_TAP_MS = 320;
 const INTRO_PHRASES = [
   ["find", "each", "word", "here"],
@@ -38,7 +38,9 @@ const MODES = {
     boardSizes: [
       { rows: 4, cols: 5, label: "4 x 5" },
       { rows: 5, cols: 4, label: "5 x 4" },
-      { rows: 5, cols: 5, label: "5 x 5" }
+      { rows: 5, cols: 5, label: "5 x 5" },
+      { rows: 5, cols: 6, label: "5 x 6" },
+      { rows: 6, cols: 5, label: "6 x 5" }
     ]
   }
 };
