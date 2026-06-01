@@ -2,7 +2,6 @@ const DEFAULT_WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
 const CHEAT_CODE = ["q", "q", "q"];
-const DOUBLE_TAP_MS = 320;
 const INTRO_PHRASES = [
   ["find", "each", "word", "here"],
   ["each", "tile", "must", "link"]
@@ -68,9 +67,6 @@ const state = {
   locked: new Map(),
   moves: [],
   activeMoveIndex: null,
-  clickStartedOnSelectedTile: false,
-  lastSelectionTap: null,
-  lastLockedTap: null,
   dragSelection: null,
   invalidSelection: false,
   invalidClearTimer: null,
@@ -903,9 +899,6 @@ function resetProgress({ resetTimer = true } = {}) {
   state.locked.clear();
   state.moves = [];
   state.activeMoveIndex = null;
-  state.clickStartedOnSelectedTile = false;
-  state.lastSelectionTap = null;
-  state.lastLockedTap = null;
   state.dragSelection = null;
   state.invalidSelection = false;
   state.cheatIndex = 0;
@@ -963,8 +956,6 @@ function render() {
     button.addEventListener("pointerup", (event) => endDragSelection(event));
     button.addEventListener("pointercancel", (event) => endDragSelection(event));
     button.addEventListener("click", () => selectCell(cell));
-    button.addEventListener("dblclick", () => handleTileDoubleClick(cell));
-
     elements.board.append(button);
   });
 
@@ -1042,10 +1033,6 @@ function renderIntroModeButton(button, cells, className, cols) {
 }
 
 function startDragSelection(cell, event) {
-  if (event.detail === 1) {
-    state.clickStartedOnSelectedTile = state.selection.includes(cell.id);
-  }
-
   if (event.pointerType === "mouse" && event.button !== 0) {
     return;
   }
@@ -1075,34 +1062,13 @@ function startDragSelection(cell, event) {
 }
 
 function handleSelectedTileTap(cell, event) {
-  const now = Date.now();
-  const isDoubleTap = (
-    state.lastSelectionTap?.cellId === cell.id &&
-    now - state.lastSelectionTap.time <= DOUBLE_TAP_MS
-  );
-
   event.preventDefault();
   state.dragSelection = null;
-
-  if (isDoubleTap) {
-    state.lastSelectionTap = null;
-    deselectSelectedCell(cell);
-    return;
-  }
-
-  state.lastSelectionTap = {
-    cellId: cell.id,
-    time: now
-  };
+  deselectSelectedCell(cell);
 }
 
 function handleLockedTileTap(cell, event) {
-  const now = Date.now();
   const lockedMoveIndex = state.locked.get(cell.id);
-  const isDoubleTap = (
-    state.lastLockedTap?.cellId === cell.id &&
-    now - state.lastLockedTap.time <= DOUBLE_TAP_MS
-  );
 
   event.preventDefault();
   state.dragSelection = null;
@@ -1111,18 +1077,13 @@ function handleLockedTileTap(cell, event) {
     return;
   }
 
-  if (isDoubleTap || isDeleteAnchorCell(cell, lockedMoveIndex)) {
-    state.lastLockedTap = null;
+  if (isDeleteAnchorCell(cell, lockedMoveIndex)) {
     deleteMove(lockedMoveIndex);
     return;
   }
 
   state.selection = [];
   state.activeMoveIndex = lockedMoveIndex;
-  state.lastLockedTap = {
-    cellId: cell.id,
-    time: now
-  };
   render();
 }
 
@@ -1314,6 +1275,11 @@ function selectCell(cell) {
     return;
   }
 
+  if (state.selection.includes(cell.id)) {
+    deselectSelectedCell(cell);
+    return;
+  }
+
   const lockedMoveIndex = state.locked.get(cell.id);
 
   if (lockedMoveIndex !== undefined) {
@@ -1332,7 +1298,6 @@ function handleLockedTileClick(cell, lockedMoveIndex) {
 
   state.selection = [];
   state.activeMoveIndex = lockedMoveIndex;
-  state.lastLockedTap = null;
   render();
 }
 
@@ -1358,17 +1323,6 @@ function addCellToSelection(cell) {
   render();
 }
 
-function handleTileDoubleClick(cell) {
-  const lockedMoveIndex = state.locked.get(cell.id);
-
-  if (lockedMoveIndex !== undefined) {
-    deleteMove(lockedMoveIndex);
-    return;
-  }
-
-  deselectCellOnDoubleClick(cell);
-}
-
 function isDeleteAnchorCell(cell, moveIndex) {
   return state.activeMoveIndex === moveIndex && cell.id === deleteAnchorCellId(moveIndex);
 }
@@ -1385,14 +1339,6 @@ function deleteAnchorCellId(moveIndex) {
     .sort(compareCells)[0]?.id || null;
 }
 
-function deselectCellOnDoubleClick(cell) {
-  if (!state.clickStartedOnSelectedTile) {
-    return;
-  }
-
-  deselectSelectedCell(cell);
-}
-
 function deselectSelectedCell(cell) {
   const existingIndex = state.selection.indexOf(cell.id);
 
@@ -1401,9 +1347,6 @@ function deselectSelectedCell(cell) {
   }
 
   state.selection.splice(existingIndex, 1);
-  state.clickStartedOnSelectedTile = false;
-  state.lastSelectionTap = null;
-  state.lastLockedTap = null;
   render();
 }
 
@@ -1611,7 +1554,6 @@ function renderSelectionLines() {
     row.className = getSelectionRowClassName(index);
     row.setAttribute("aria-label", `Selection ${index + 1}: ${move.word}. Press Backspace to delete.`);
     row.addEventListener("click", () => selectMoveLine(index));
-    row.addEventListener("dblclick", () => deleteMove(index));
 
     if (isPuzzleComplete()) {
       row.textContent = move.word.toUpperCase();
@@ -1765,7 +1707,6 @@ function deleteMove(index) {
   state.activeMoveIndex = null;
   state.dragSelection = null;
   state.invalidSelection = false;
-  state.lastLockedTap = null;
   state.completedAt = null;
   state.solvedWithHelp = false;
   clearInvalidTimer();
@@ -2085,7 +2026,6 @@ function closePanelsFromOutside(event) {
     !event.target.closest(".selection-row")
   ) {
     state.activeMoveIndex = null;
-    state.lastLockedTap = null;
     render();
   }
 }
