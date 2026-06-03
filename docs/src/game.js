@@ -1,7 +1,7 @@
 const DEFAULT_WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
-const CHEAT_CODE = ["q", "q", "q"];
+const CHEAT_CODE = [..."uuddlrlrab"];
 const SOLUTION_MULTIPLIERS = [3, 7, 9];
 const SOLUTION_MULTIPLIER_INVERSES = {
   3: 7,
