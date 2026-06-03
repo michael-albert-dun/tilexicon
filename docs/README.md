@@ -70,8 +70,9 @@ Supported URL parameters:
 A grid-only link defaults to four-letter mode, 4 x 4, left-to-right reading,
 ordinary mode, and timed play.
 
-The solution encoding is not intended to be secure; it is only meant to avoid
-making the answer immediately readable in the URL.
+The solution encoding stores the piece placement, not the words themselves. It
+is not intended to be secure; it is only meant to avoid making the answer
+immediately readable in the URL.
 
 ## Running Locally
 

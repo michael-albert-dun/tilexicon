@@ -2,6 +2,12 @@ const DEFAULT_WORD_LENGTH = 4;
 const GROUP_COLOR_COUNT = 9;
 const SESSION_STORAGE_KEY = "tilexicon.currentPuzzle";
 const CHEAT_CODE = ["q", "q", "q"];
+const SOLUTION_MULTIPLIERS = [3, 7, 9];
+const SOLUTION_MULTIPLIER_INVERSES = {
+  3: 7,
+  7: 3,
+  9: 9
+};
 const INTRO_PHRASES = [
   ["find", "each", "word", "here"],
   ["each", "tile", "must", "link"]
@@ -649,32 +655,136 @@ function validCurrentSolution() {
 }
 
 function encodeSolution(solution, grid) {
-  // This is only meant to keep the answer from being immediately readable in a URL.
-  // It is obfuscation, not security.
-  const pieceByCell = new Map();
-  const values = [];
+  const tiling = solutionToTiling(solution);
 
-  solution.forEach((move, pieceIndex) => {
-    move.cells.forEach((id) => pieceByCell.set(id, pieceIndex));
-  });
-
-  state.board.forEach((cell) => {
-    const pieceIndex = pieceByCell.get(cell.id);
-
-    if (pieceIndex === undefined) {
-      return;
-    }
-
-    values.push(letterToInt(cell.letter));
-    values.push(obfuscatedPieceValue(pieceIndex));
-  });
-
-  return values.length === boardCellCount() * 2
-    ? cumulativeEncode(values)
-    : "";
+  return tiling ? encodeSolutionTiling(tiling, grid) : "";
 }
 
 function decodeSolution(encoded, grid) {
+  const decodedTilingSolution = decodeSolutionTiling(encoded, grid);
+
+  if (decodedTilingSolution !== null) {
+    return decodedTilingSolution;
+  }
+
+  return decodeLegacySolution(encoded, grid);
+}
+
+function solutionToTiling(solution) {
+  const labels = Array.from({ length: boardCellCount() }, () => null);
+
+  solution.forEach((move, pieceIndex) => {
+    move.cells.forEach((id) => {
+      const cell = getCellById(id);
+
+      if (cell) {
+        labels[cell.row * state.cols + cell.col] = String(pieceIndex);
+      }
+    });
+  });
+
+  return labels.every((label) => label !== null) ? labels.join("") : "";
+}
+
+function encodeSolutionTiling(tiling, grid) {
+  if (!isValidSolutionTiling(tiling)) {
+    return "";
+  }
+
+  const settings = solutionCipherSettings(grid);
+  let rolling = settings.rolling;
+
+  return [...tiling].map((label, index) => {
+    const raw = Number(label);
+    const additive = (settings.seed + index * settings.offset) % 10;
+    const mixed = mod10(raw + settings.offset + rolling + index * settings.step);
+    const encoded = mod10(mixed * settings.multiplier + additive);
+
+    rolling = mod10(rolling + raw + index + settings.offset);
+    return String(encoded);
+  }).join("");
+}
+
+function decodeSolutionTiling(encoded, grid) {
+  if (typeof encoded !== "string" || encoded.length !== boardCellCount() || !/^\d+$/.test(encoded)) {
+    return null;
+  }
+
+  const settings = solutionCipherSettings(grid);
+  let rolling = settings.rolling;
+  const tiling = [...encoded].map((label, index) => {
+    const additive = (settings.seed + index * settings.offset) % 10;
+    const mixed = mod10((Number(label) - additive) * settings.inverseMultiplier);
+    const raw = mod10(mixed - settings.offset - rolling - index * settings.step);
+
+    rolling = mod10(rolling + raw + index + settings.offset);
+    return String(raw);
+  }).join("");
+
+  if (!isValidSolutionTiling(tiling)) {
+    return null;
+  }
+
+  const solution = compactTilingToPieces(tiling).map((cells) => makeSolutionMove(cells));
+
+  if (solution.some((move) => move === null)) {
+    return null;
+  }
+
+  return isValidSolution(solution) ? solution : null;
+}
+
+function isValidSolutionTiling(tiling) {
+  const expectedPieceCount = pieceCount();
+
+  if (
+    !Number.isInteger(expectedPieceCount) ||
+    expectedPieceCount > 10 ||
+    typeof tiling !== "string" ||
+    tiling.length !== boardCellCount() ||
+    !/^\d+$/.test(tiling)
+  ) {
+    return false;
+  }
+
+  const counts = Array.from({ length: expectedPieceCount }, () => 0);
+
+  [...tiling].forEach((label) => {
+    const pieceIndex = Number(label);
+
+    if (pieceIndex >= 0 && pieceIndex < expectedPieceCount) {
+      counts[pieceIndex] += 1;
+    }
+  });
+
+  return counts.every((count) => count === state.wordLength);
+}
+
+function solutionCipherSettings(grid) {
+  const seed = checksumString(`${currentSizeKey()}|${state.wordLength}|${state.readingOrder}|${state.strictMode ? 1 : 0}|${grid}`);
+  const multiplier = SOLUTION_MULTIPLIERS[seed % SOLUTION_MULTIPLIERS.length];
+
+  return {
+    seed,
+    multiplier,
+    inverseMultiplier: SOLUTION_MULTIPLIER_INVERSES[multiplier],
+    offset: (seed * 7 + state.rows + state.cols) % 10,
+    rolling: (seed * 3 + state.wordLength) % 10,
+    step: (seed % 7) + 3
+  };
+}
+
+function checksumString(value) {
+  return [...value].reduce((checksum, character, index) => (
+    (checksum + character.charCodeAt(0) * (index + 17)) % 1000003
+  ), 0);
+}
+
+function mod10(value) {
+  return ((value % 10) + 10) % 10;
+}
+
+function decodeLegacySolution(encoded, grid) {
   if (!encoded || !new RegExp(`^[a-z]{${boardCellCount() * 2}}$`, "i").test(encoded)) {
     return null;
   }
@@ -752,15 +862,6 @@ function resolveSolutionWord(cells) {
   return isAllowedWord(word) ? word : null;
 }
 
-function cumulativeEncode(values) {
-  let sum = 0;
-
-  return values.map((value) => {
-    sum += value;
-    return intToLetter((17 + sum) % 26);
-  }).join("");
-}
-
 function cumulativeDecode(encoded) {
   let previous = 17;
 
@@ -777,19 +878,8 @@ function letterToInt(letter) {
   return letter.toUpperCase().charCodeAt(0) - 65;
 }
 
-function intToLetter(value) {
-  return String.fromCharCode(97 + value);
-}
-
 function randomInt(max) {
   return Math.floor(Math.random() * max);
-}
-
-function obfuscatedPieceValue(pieceIndex) {
-  const count = pieceCount();
-  const options = Math.floor((25 - pieceIndex) / count) + 1;
-
-  return pieceIndex + count * randomInt(options);
 }
 
 function isValidSolution(solution) {
@@ -2097,17 +2187,7 @@ function handleShortcut(event) {
 
   const key = event.key.toLowerCase();
   const shortcuts = {
-    "?": () => toggleKeyboardPanel(),
-    i: () => toggleInfoPanel(event),
-    s: () => setStrictMode(true),
-    o: () => setStrictMode(false),
-    n: () => startNewGame(),
-    p: () => showPrintPanel(),
-    r: () => restartGame(),
-    l: () => setReadingOrder(READING_ORDER.ROW),
-    t: () => setReadingOrder(READING_ORDER.COLUMN),
-    e: () => setReadingOrder(READING_ORDER.BOTH),
-    a: () => setReadingOrder(READING_ORDER.ANY)
+    i: () => toggleInfoPanel(event)
   };
 
   if (!shortcuts[key]) {
