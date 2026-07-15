@@ -9,6 +9,7 @@ ably
 abox
 abut
 acca
+acer
 ache
 achy
 acid
@@ -18,6 +19,7 @@ acne
 acor
 acre
 acta
+acts
 actu
 acyl
 adad
@@ -25,6 +27,7 @@ adat
 adaw
 aday
 adda
+adds
 adet
 adit
 admi
@@ -42,6 +45,7 @@ aged
 agee
 agen
 ager
+ages
 agha
 agio
 agla
@@ -55,8 +59,10 @@ ahey
 ahoy
 ahum
 aide
+aids
 aiel
 aile
+aims
 aint
 aion
 aire
@@ -142,9 +148,11 @@ apex
 apii
 apio
 apod
+apps
 apse
 aqua
 aquo
+arab
 arad
 arar
 arba
@@ -162,6 +170,7 @@ army
 arna
 arni
 arow
+arts
 arty
 arui
 aryl
@@ -169,6 +178,7 @@ asak
 asci
 asem
 ashy
+asks
 asok
 asop
 asor
@@ -237,6 +247,7 @@ baff
 baft
 baga
 bago
+bags
 baho
 baht
 bail
@@ -267,6 +278,7 @@ bari
 bark
 barm
 barn
+bars
 baru
 base
 bash
@@ -295,6 +307,7 @@ bear
 beat
 beau
 beck
+beds
 beef
 beek
 been
@@ -334,6 +347,7 @@ bibi
 bice
 bick
 bide
+bids
 bien
 bier
 biff
@@ -365,6 +379,7 @@ birr
 bite
 biti
 bito
+bits
 bitt
 biwa
 bizz
@@ -385,6 +400,7 @@ blet
 blip
 blob
 bloc
+blog
 blot
 blow
 blub
@@ -454,11 +470,13 @@ bouw
 bowk
 bowl
 boxy
+boys
 boza
 brab
 brae
 brag
 bran
+bras
 brat
 braw
 bray
@@ -485,6 +503,7 @@ buck
 buda
 buff
 bufo
+bugs
 buhl
 buhr
 bukh
@@ -515,17 +534,20 @@ busk
 buss
 bust
 busy
+buys
 buzz
 byee
 bygo
 byon
 byre
+byte
 byth
 caam
 caba
 cack
 cade
 cadi
+cafe
 cafh
 cage
 caid
@@ -541,6 +563,7 @@ calx
 camb
 came
 camp
+cams
 cand
 cane
 cank
@@ -548,11 +571,14 @@ cant
 cany
 cape
 caph
+caps
+carb
 card
 care
 cark
 carp
 carr
+cars
 cart
 case
 cash
@@ -560,6 +586,7 @@ cask
 cass
 cast
 cate
+cats
 cauk
 caul
 caum
@@ -597,6 +624,7 @@ chaw
 chay
 chee
 chef
+chem
 chew
 chia
 chic
@@ -604,6 +632,7 @@ chid
 chih
 chil
 chin
+chip
 chit
 chob
 chol
@@ -681,6 +710,7 @@ cond
 cone
 conk
 conn
+cons
 cony
 coof
 cook
@@ -747,6 +777,7 @@ cull
 culm
 cult
 cump
+cups
 curb
 curd
 cure
@@ -758,6 +789,7 @@ cusk
 cusp
 cuss
 cute
+cuts
 cuvy
 cuya
 cyan
@@ -777,6 +809,7 @@ daft
 dags
 dain
 dais
+dale
 dali
 dalk
 dalt
@@ -809,6 +842,7 @@ dazy
 dead
 deaf
 deal
+dean
 dear
 debt
 deck
@@ -825,6 +859,7 @@ delf
 dell
 deme
 demi
+demo
 demy
 dene
 dent
@@ -850,8 +885,10 @@ dibs
 dice
 dich
 dieb
+died
 diem
 dier
+dies
 diet
 digs
 dika
@@ -882,6 +919,7 @@ doat
 dobe
 doby
 dock
+docs
 dodd
 dodo
 doer
@@ -942,6 +980,7 @@ draw
 dray
 dree
 dreg
+drew
 drib
 drip
 drop
@@ -962,6 +1001,7 @@ duet
 duff
 duim
 duit
+duke
 dull
 dult
 duly
@@ -987,7 +1027,9 @@ dyce
 dyer
 dyne
 each
+earl
 earn
+ears
 ease
 east
 easy
@@ -1006,6 +1048,7 @@ edgy
 edit
 eely
 egad
+eggs
 eggy
 egma
 egol
@@ -1022,6 +1065,7 @@ emit
 empt
 emyd
 enam
+ends
 enol
 enow
 ense
@@ -1033,6 +1077,7 @@ epic
 epos
 eral
 eria
+eric
 erne
 eros
 erth
@@ -1056,11 +1101,13 @@ exam
 exes
 exit
 exon
+expo
 eyah
 eyas
 eyed
 eyen
 eyer
+eyes
 eyey
 eyne
 eyot
@@ -1086,6 +1133,7 @@ fame
 fana
 fand
 fang
+fans
 fant
 faon
 fare
@@ -1108,6 +1156,7 @@ feck
 feed
 feel
 feer
+fees
 feet
 feif
 feil
@@ -1149,6 +1198,7 @@ fisc
 fise
 fish
 fist
+fits
 five
 fizz
 flag
@@ -1264,6 +1314,7 @@ gain
 gair
 gait
 gala
+gale
 gali
 gall
 galp
@@ -1279,6 +1330,7 @@ gaol
 gapa
 gape
 gapo
+gaps
 gapy
 gara
 garb
@@ -1317,6 +1369,7 @@ geld
 gell
 gelt
 gena
+gene
 gens
 gent
 genu
@@ -1325,6 +1378,7 @@ germ
 gers
 gest
 geta
+gets
 geum
 ghat
 ghee
@@ -1354,6 +1408,7 @@ glam
 glar
 glee
 gleg
+glen
 glia
 glib
 glom
@@ -1377,6 +1432,7 @@ gobi
 gobo
 goby
 gode
+gods
 goel
 goer
 goes
@@ -1448,6 +1504,7 @@ guna
 gunj
 gunk
 gunl
+guns
 gurk
 gurl
 gurr
@@ -1457,6 +1514,7 @@ gush
 guss
 gust
 gutt
+guys
 guze
 gwag
 gyle
@@ -1513,9 +1571,9 @@ hart
 hash
 hask
 hasp
-hats
 hate
 hath
+hats
 hatt
 haul
 have
@@ -1577,6 +1635,7 @@ hish
 hisn
 hiss
 hist
+hits
 hive
 hizz
 hoar
@@ -1687,9 +1746,11 @@ inby
 inch
 inde
 indy
+info
 inks
 inky
 inly
+inns
 inro
 into
 iodo
@@ -1711,6 +1772,7 @@ ivin
 iwis
 izar
 izle
+jack
 jacu
 jade
 jady
@@ -1745,6 +1807,7 @@ jerm
 jert
 jest
 jete
+jets
 jhow
 jibe
 jibi
@@ -1760,6 +1823,7 @@ jiti
 jiva
 jive
 jobo
+jobs
 joch
 jocu
 joey
@@ -1769,6 +1833,7 @@ joky
 joll
 jolt
 joom
+josh
 joss
 jota
 joug
@@ -1839,6 +1904,7 @@ keta
 keto
 keup
 kexy
+keys
 khan
 khar
 khat
@@ -1848,6 +1914,7 @@ khot
 kibe
 kiby
 kick
+kids
 kiel
 kier
 kiku
@@ -1868,6 +1935,7 @@ kiss
 kist
 kite
 kith
+kits
 kiva
 kivu
 kiwi
@@ -1932,6 +2000,7 @@ kyah
 kyar
 kyat
 kyte
+labs
 lace
 lack
 lacy
@@ -1973,6 +2042,7 @@ lava
 lave
 lawk
 lawn
+laws
 laze
 lazy
 lead
@@ -1993,6 +2063,7 @@ leer
 lees
 leet
 left
+legs
 lehr
 lend
 lene
@@ -2004,6 +2075,7 @@ lerp
 less
 lest
 lete
+lets
 leud
 leuk
 levo
@@ -2018,6 +2090,7 @@ lied
 lief
 lien
 lier
+lies
 lieu
 life
 lifo
@@ -2046,6 +2119,7 @@ lint
 liny
 lion
 lipa
+lips
 lira
 lire
 lish
@@ -2073,6 +2147,7 @@ lode
 loft
 loge
 logo
+logs
 logy
 loin
 loir
@@ -2091,6 +2166,7 @@ loop
 loot
 lope
 lora
+lord
 lore
 lorn
 loro
@@ -2111,6 +2187,7 @@ lout
 love
 lowa
 lown
+lows
 lowy
 lube
 luce
@@ -2178,11 +2255,13 @@ mano
 mant
 many
 mapo
+maps
 mare
 mark
 marl
 marm
 maro
+mars
 mart
 maru
 masa
@@ -2193,6 +2272,7 @@ mast
 masu
 mate
 math
+mats
 maty
 maud
 maul
@@ -2259,6 +2339,7 @@ mina
 mind
 mine
 ming
+mini
 mink
 mino
 mint
@@ -2301,6 +2382,7 @@ molt
 moly
 mome
 momo
+moms
 mona
 mone
 mong
@@ -2434,6 +2516,7 @@ next
 ngai
 nibs
 nice
+nick
 nide
 nidi
 nife
@@ -2461,6 +2544,7 @@ noon
 noop
 nope
 nori
+norm
 nose
 nosh
 nosy
@@ -2476,6 +2560,8 @@ nude
 nuke
 null
 numb
+nuts
+oaks
 oaky
 oary
 oast
@@ -2526,6 +2612,7 @@ onca
 once
 ondy
 oner
+ones
 only
 onto
 onus
@@ -2536,6 +2623,7 @@ oofy
 ooid
 oons
 oont
+oops
 oord
 ooze
 oozy
@@ -2566,6 +2654,7 @@ ovey
 ovum
 ower
 owly
+owns
 owse
 oxan
 oxea
@@ -2580,6 +2669,7 @@ pace
 pack
 paco
 pact
+pads
 paga
 page
 paha
@@ -2631,12 +2721,14 @@ pavy
 pawk
 pawl
 pawn
+pays
 peag
 peai
 peak
 peal
 pean
 pear
+peas
 peat
 peba
 pech
@@ -2656,6 +2748,7 @@ pelt
 pelu
 pend
 penk
+pens
 pent
 peon
 pepo
@@ -2669,6 +2762,7 @@ peso
 pess
 pest
 peto
+pets
 pewy
 pfui
 phew
@@ -2704,8 +2798,10 @@ pimp
 pina
 pind
 pine
+ping
 pink
 pino
+pins
 pint
 piny
 pipa
@@ -2801,6 +2897,7 @@ prat
 prau
 pray
 prep
+prev
 prey
 prig
 prim
@@ -2811,6 +2908,7 @@ prof
 prog
 proo
 prop
+pros
 prow
 pruh
 prut
@@ -2845,6 +2943,7 @@ pure
 purl
 purr
 push
+puts
 putt
 puxy
 pyal
@@ -2917,10 +3016,12 @@ rasp
 rata
 rate
 rath
+rats
 rauk
 raun
 rave
 raya
+rays
 raze
 razz
 read
@@ -3036,6 +3137,7 @@ roun
 roup
 rout
 rove
+rows
 rowy
 roxy
 royt
@@ -3047,6 +3149,7 @@ ruen
 ruer
 ruff
 ruga
+rugs
 ruin
 rukh
 rule
@@ -3054,6 +3157,7 @@ rull
 rump
 rune
 rung
+runs
 runt
 rupa
 ruru
@@ -3122,6 +3226,7 @@ save
 sawn
 sawt
 saya
+says
 scab
 scad
 scam
@@ -3149,6 +3254,7 @@ seak
 seal
 seam
 sear
+seas
 seat
 seax
 sech
@@ -3161,6 +3267,7 @@ seem
 seen
 seep
 seer
+sees
 sego
 seit
 sele
@@ -3180,6 +3287,7 @@ sero
 sert
 sess
 seta
+sets
 sett
 sewn
 sext
@@ -3276,6 +3384,7 @@ skid
 skil
 skim
 skin
+skip
 skit
 skiv
 skoo
@@ -3401,6 +3510,7 @@ spak
 spam
 span
 spar
+spas
 spat
 spay
 spec
@@ -3509,6 +3619,7 @@ syne
 syre
 syrt
 taar
+tabs
 tabu
 tach
 tack
@@ -3517,6 +3628,7 @@ tade
 tael
 taen
 taft
+tags
 taha
 tahr
 tail
@@ -3640,6 +3752,7 @@ tidy
 tied
 tien
 tier
+ties
 tiff
 tift
 tige
@@ -3654,6 +3767,7 @@ tink
 tint
 tiny
 tipe
+tips
 tire
 tirl
 tirr
@@ -3689,6 +3803,7 @@ tome
 tone
 tong
 tonk
+tons
 took
 tool
 toom
@@ -3723,6 +3838,7 @@ towd
 town
 towy
 toxa
+toys
 toze
 trag
 trah
@@ -3849,6 +3965,7 @@ usar
 used
 usee
 user
+uses
 utai
 utas
 utch
@@ -3900,6 +4017,7 @@ veta
 veto
 vext
 vial
+vice
 vier
 view
 viga
@@ -3968,6 +4086,7 @@ warl
 warm
 warn
 warp
+wars
 wart
 wary
 wase
@@ -4063,6 +4182,7 @@ wind
 wine
 wing
 wink
+wins
 wint
 winy
 wipe
